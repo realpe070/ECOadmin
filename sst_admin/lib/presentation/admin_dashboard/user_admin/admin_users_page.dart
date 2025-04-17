@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../../core/services/api_service.dart';
+import 'user_stats_dialog.dart';
 
 class AdminUsersPage extends StatefulWidget {
   const AdminUsersPage({super.key});
@@ -9,6 +12,47 @@ class AdminUsersPage extends StatefulWidget {
 
 class _AdminUsersPageState extends State<AdminUsersPage> {
   String _searchQuery = '';
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final response = await ApiService().get('/admin/users');
+      final users = (response['data'] as List).cast<Map<String, dynamic>>();
+
+      setState(() {
+        _users = users;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'No disponible';
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('d MMMM, y - HH:mm', 'es_ES').format(date);
+    } catch (e) {
+      return dateString;
+    }
+  }
 
   void _showUserDetails(BuildContext context, Map<String, dynamic> user) {
     showDialog(
@@ -38,9 +82,10 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                       backgroundColor: Colors.white,
                       radius: 30,
                       child: Text(
-                        user['name'][0],
+                        (user['name'] ?? user['displayName'] ?? 'U')[0].toUpperCase(),
                         style: const TextStyle(
                           fontSize: 24,
+                          fontFamily: 'HelveticaRounded',
                           color: Color(0xFF0067AC),
                         ),
                       ),
@@ -51,15 +96,16 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user['name'],
+                            user['name'] ?? user['displayName'] ?? 'Usuario',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
+                              fontFamily: 'HelveticaRounded',
                               color: Colors.white,
                             ),
                           ),
                           Text(
-                            user['email'],
+                            user['email'] ?? 'Sin correo',
                             style: const TextStyle(
                               color: Colors.white70,
                             ),
@@ -74,11 +120,12 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    _infoRow('Fecha de registro', user['registerDate']),
-                    _infoRow('Último acceso', user['lastAccess']),
-                    _infoRow('Estado', user['status']),
-                    _infoRow('Rol', user['role']),
-                    _infoRow('Departamento', user['department']),
+                    _infoRow('UID', user['uid'] ?? 'N/A'),
+                    _infoRow('Fecha de registro', user['creationTime'] ?? 'N/A'),
+                    _infoRow('Último acceso', user['lastSignInTime'] ?? 'N/A'),
+                    _infoRow('Estado', user['status'] ?? 'N/A'),
+                    if (user['gender'] != null) _infoRow('Género', user['gender']),
+                    if (user['lastName'] != null) _infoRow('Apellido', user['lastName']),
                   ],
                 ),
               ),
@@ -90,7 +137,21 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cerrar'),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.red.shade400,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Text(
+                        'Cerrar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'HelveticaRounded',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -102,7 +163,28 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  void _showUserStats(BuildContext context, Map<String, dynamic> user) {
+    showDialog(
+      context: context,
+      builder: (context) => UserStatsDialog(
+        userId: user['uid'],
+        userName: user['name'] ?? user['displayName'] ?? 'Usuario',
+      ),
+    );
+  }
+
   Widget _infoRow(String label, String value) {
+    String displayValue = value;
+    
+    // Traducir estados
+    if (label == 'Estado') {
+      displayValue = value == 'active' ? 'Activo' : 'Inactivo';
+    }
+    // Formatear fechas
+    else if (label == 'Fecha de registro' || label == 'Último acceso') {
+      displayValue = _formatDate(value);
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -112,9 +194,17 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Color(0xFF0067AC),
+              fontFamily: 'HelveticaRounded',
             ),
           ),
-          Text(value),
+          Expanded(
+            child: Text(
+              displayValue,
+              style: const TextStyle(
+                fontFamily: 'HelveticaRounded',
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -122,116 +212,204 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ejemplo de datos de usuario
-    final List<Map<String, dynamic>> users = List.generate(
-      10,
-      (index) => {
-        'name': 'Usuario ${index + 1}',
-        'email': 'usuario${index + 1}@ejemplo.com',
-        'registerDate': '2024-01-${index + 1}',
-        'lastAccess': '2024-02-${index + 1}',
-        'status': 'Activo',
-        'role': 'Usuario',
-        'department': 'Departamento ${index + 1}',
-      },
-    );
-
-    final filteredUsers = users.where((user) => 
-      user['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      user['email'].toString().toLowerCase().contains(_searchQuery.toLowerCase())
-    ).toList();
+    final filteredUsers = _users.where((user) {
+      final searchLower = _searchQuery.toLowerCase();
+      final name = (user['name'] ?? user['displayName'] ?? '').toString().toLowerCase();
+      final email = (user['email'] ?? '').toString().toLowerCase();
+      return name.contains(searchLower) || email.contains(searchLower);
+    }).toList();
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF0067AC).withAlpha(26), // 0.1 * 255 ≈ 26
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0067AC),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+            ),
             child: Row(
               children: [
                 const Text(
                   'Gestión de Usuarios',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0067AC),
+                    fontFamily: 'HelveticaRounded',
+                    color: Colors.white,
                   ),
                 ),
                 const Spacer(),
-                SizedBox(
-                  width: 300,
+                Container(
+                  width: 400, // Aumentado de 300 a 400
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: TextField(
                     onChanged: (value) => setState(() => _searchQuery = value),
                     decoration: InputDecoration(
-                      hintText: 'Buscar usuarios...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                      hintText: 'Buscar usuarios por nombre o correo...',
+                      hintStyle: TextStyle(
+                        color: const Color(0xFF0067AC).withAlpha(128),
+                        fontFamily: 'HelveticaRounded',
                       ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: const Color(0xFF0067AC).withAlpha(128),
+                      ),
+                      border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
                 ),
+                const SizedBox(width: 16), // Agregado espacio al final
               ],
             ),
           ),
-          const Divider(height: 1),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: filteredUsers.length,
-              itemBuilder: (context, index) {
-                final user = filteredUsers[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF0067AC),
-                      child: Text(
-                        user['name'][0],
-                        style: const TextStyle(color: Colors.white),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF0067AC),
+                    ),
+                  )
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error: $_error',
+                              style: TextStyle(
+                                color: Colors.red.shade300,
+                                fontFamily: 'HelveticaRounded',
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(24),
+                        itemCount: filteredUsers.length,
+                        itemBuilder: (context, index) {
+                          final user = filteredUsers[index];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0067AC).withAlpha(13), // 0.05 * 255 ≈ 13
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF0067AC),
+                                radius: 25,
+                                child: Text(
+                                  (user['name'] ?? user['displayName'] ?? 'U')[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'HelveticaRounded',
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                user['name'] ?? user['displayName'] ?? 'Usuario',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'HelveticaRounded',
+                                  color: Color(0xFF0067AC),
+                                ),
+                              ),
+                              subtitle: Text(
+                                user['email'] ?? 'Sin correo',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontFamily: 'HelveticaRounded',
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _buildActionButton(
+                                    icon: Icons.bar_chart,
+                                    color: const Color(0xFFC6DA23),
+                                    onPressed: () => _showUserStats(context, user),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildActionButton(
+                                    icon: Icons.info_outline,
+                                    color: const Color(0xFF0067AC),
+                                    onPressed: () => _showUserDetails(context, user),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                    title: Text(user['name']),
-                    subtitle: Text(user['email']),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.info_outline, color: Color(0xFF0067AC)),
-                          onPressed: () => _showUserDetails(context, user),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () {
-                            // Implementar edición
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () {
-                            // Implementar eliminación
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withAlpha(26), // 0.1 * 255 ≈ 26
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color),
+        onPressed: onPressed,
+        tooltip: icon == Icons.bar_chart ? 'Ver estadísticas' : 'Ver detalles',
       ),
     );
   }

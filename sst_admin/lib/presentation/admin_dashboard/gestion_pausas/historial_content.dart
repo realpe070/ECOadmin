@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 class HistorialContent extends StatelessWidget {
   final VoidCallback onClose;
 
-  const HistorialContent({required this.onClose, Key? key}) : super(key: key);
+  const HistorialContent({
+    required this.onClose,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 
 class FloatingPanel extends StatelessWidget {
+  final String title;
   final Widget child;
   final VoidCallback onClose;
 
-  const FloatingPanel({required this.child, required this.onClose, Key? key}) : super(key: key);
+  const FloatingPanel({
+    required this.title,
+    required this.child,
+    required this.onClose,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: Material(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withAlpha(138), // Reemplazado withOpacity por withAlpha
         child: Center(
           child: Container(
             width: MediaQuery.of(context).size.width * 0.9,
@@ -33,9 +39,9 @@ class FloatingPanel extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Panel',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      Text(
+                        title,
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white),

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 class GestionPausasContent extends StatelessWidget {
   final VoidCallback onClose;
 
-  const GestionPausasContent({required this.onClose, Key? key}) : super(key: key);
+  const GestionPausasContent({
+    required this.onClose,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

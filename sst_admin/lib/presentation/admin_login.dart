@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../core/service/platform_service.dart';
-import '../core/routes_adm.dart';
+import '../core/services/platform_service.dart';
+import '../core/routes/app_routes.dart';  // Actualizado para usar la nueva ubicación
+import '../core/services/api_service.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -13,6 +14,78 @@ class AdminLoginPageState extends State<AdminLoginPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnection();
+  }
+
+  Future<void> _checkConnection() async {
+    final isConnected = await ApiService().verifyConnection();
+    if (mounted) {
+      setState(() {
+        _isConnected = isConnected;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isConnected
+              ? '✅ Servidor conectado y funcionando correctamente'
+              : '❌ No se pudo conectar al backend'),
+          backgroundColor: _isConnected ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleLogin() async {
+    try {
+      if (!_isConnected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ No hay conexión con el servidor'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final result = await ApiService().authenticateAdmin(
+        usernameController.text,
+        passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      if (result['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${result['message'] ?? '¡Inicio de sesión exitoso!'}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacementNamed(context, AdminRoutes.dashboard);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${result['message'] ?? 'Credenciales incorrectas'}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +95,9 @@ class AdminLoginPageState extends State<AdminLoginPage> {
           child: Text(
             'El panel de administración solo está disponible en computadoras de escritorio.',
             textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'HelveticaRounded',
+            ),
           ),
         ),
       );
@@ -42,6 +118,29 @@ class AdminLoginPageState extends State<AdminLoginPage> {
               height: 80,
             ),
           ),
+          if (!_isConnected)
+            Positioned(
+              top: 20,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text(
+                      'Sin conexión al backend',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Center(
             child: Container(
               width: size.width * 0.85,
@@ -135,29 +234,7 @@ class AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: () {
-                      const adminUsername = 'ecoecobreack@gmail.com';
-                      const adminPassword = 'ECO123456789';
-
-                      if (usernameController.text == adminUsername &&
-                          passwordController.text == adminPassword) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('¡Inicio de sesión exitoso!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        if (!mounted) return;
-                        Navigator.pushReplacementNamed(context, AdminRoutes.dashboard);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Credenciales incorrectas'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0067AC),
                       padding: const EdgeInsets.symmetric(
@@ -193,23 +270,21 @@ class BackgroundPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
 
     paint.color = const Color(0xFF0067AC);
-    final path1 =
-        Path()
-          ..moveTo(0, 0)
-          ..lineTo(size.width, 0)
-          ..lineTo(size.width, size.height * 0.5)
-          ..lineTo(0, size.height * 0.4)
-          ..close();
+    final path1 = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.5)
+      ..lineTo(0, size.height * 0.4)
+      ..close();
     canvas.drawPath(path1, paint);
 
     paint.color = const Color(0xFFC6DA23);
-    final borderPath =
-        Path()
-          ..moveTo(0, size.height * 0.4)
-          ..lineTo(size.width, size.height * 0.5)
-          ..lineTo(size.width, size.height * 0.48)
-          ..lineTo(0, size.height * 0.38)
-          ..close();
+    final borderPath = Path()
+      ..moveTo(0, size.height * 0.4)
+      ..lineTo(size.width, size.height * 0.5)
+      ..lineTo(size.width, size.height * 0.48)
+      ..lineTo(0, size.height * 0.38)
+      ..close();
     canvas.drawPath(borderPath, paint);
   }
 

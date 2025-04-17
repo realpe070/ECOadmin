@@ -1,13 +1,24 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'administrador/presentation/admin_login.dart';
-import 'administrador/core/routes_adm.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Añadir esta importación
+import 'core/routes/app_routes.dart';
+import 'firebase_options.dart';
+import 'presentation/admin_login.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // Inicializar los datos de localización
+  await initializeDateFormatting('es_ES', null);
+  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,9 +28,24 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'HelveticaRounded',
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(fontFamily: 'HelveticaRounded'),
+          bodyMedium: TextStyle(fontFamily: 'HelveticaRounded'),
+          titleLarge: TextStyle(fontFamily: 'HelveticaRounded'),
+        ),
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'),
+      ],
+      locale: const Locale('es', 'ES'),
       initialRoute: AdminRoutes.login,
-      routes: adminRoutes,
+      routes: AdminRoutes.routes,
       home: const AdminLoginPage(),
     );
   }

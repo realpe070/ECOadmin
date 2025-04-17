@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
+
 class PlatformService {
-  static bool get isAdminPlatform {
-    return true; // Always true for PC
-  }
+  static bool get isAdminPlatform => 
+    kIsWeb || defaultTargetPlatform == TargetPlatform.windows || 
+    defaultTargetPlatform == TargetPlatform.macOS || 
+    defaultTargetPlatform == TargetPlatform.linux;
 }
