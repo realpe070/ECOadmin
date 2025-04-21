@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';  // Actualizado para usar la nueva ubicación
 import './user_admin/admin_users_page.dart';
+import 'pausa_activa/create_activity_content.dart';
+import 'pausa_activa/edit_activities_content.dart';
+import 'pausa_activa/activity_list_content.dart';
+import 'pausa_activa/history_content.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -11,6 +15,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   Widget? _currentContent;
+  bool _pausaActivaExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +80,54 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     _currentContent = const AdminUsersPage();
                   }),
                 ),
-                _buildMenuItem(
-                  icon: Icons.fitness_center,
-                  title: 'Gestión de Pausas',
-                  isDisabled: true,
+                ExpansionTile(
+                  leading: const Icon(
+                    Icons.fitness_center,
+                    color: Color(0xFF0067AC),
+                    size: 22,
+                  ),
+                  title: Text(
+                    'Gestión de Pausas',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'HelveticaRounded',
+                      color: _pausaActivaExpanded ? const Color(0xFF0067AC) : Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  childrenPadding: EdgeInsets.zero,
+                  collapsedIconColor: Colors.grey,
+                  iconColor: const Color(0xFF0067AC),
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _buildSubMenuItem(
+                      title: 'Nueva Actividad',
+                      onTap: () => setState(() {
+                        _currentContent = const CreateActivityContent();
+                      }),
+                    ),
+                    _buildSubMenuItem(
+                      title: 'Editar Actividades',
+                      onTap: () => setState(() {
+                        _currentContent = const EditActivitiesContent();
+                      }),
+                    ),
+                    _buildSubMenuItem(
+                      title: 'Ver Lista',
+                      onTap: () => setState(() {
+                        _currentContent = const ActivityListContent();
+                      }),
+                    ),
+                    _buildSubMenuItem(
+                      title: 'Historial',
+                      onTap: () => setState(() {
+                        _currentContent = const HistoryContent();
+                      }),
+                    ),
+                  ],
+                  onExpansionChanged: (expanded) {
+                    setState(() => _pausaActivaExpanded = expanded);
+                  },
                 ),
                 _buildMenuItem(
                   icon: Icons.notifications,
@@ -159,17 +208,60 @@ class _AdminDashboardState extends State<AdminDashboard> {
       color: Colors.transparent,
       child: ListTile(
         onTap: isDisabled ? null : onTap,
-        leading: Icon(icon, color: color),
+        leading: Icon(icon, color: color, size: 22),
         title: Text(
           title,
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontFamily: 'HelveticaRounded',
           ),
         ),
         dense: true,
         visualDensity: const VisualDensity(vertical: -1),
       ),
+    );
+  }
+
+  Widget _buildSubMenuItem({
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    IconData getIcon() {
+      switch (title) {
+        case 'Nueva Actividad':
+          return Icons.add_circle_outline;
+        case 'Editar Actividades':
+          return Icons.edit_note;
+        case 'Ver Lista':
+          return Icons.format_list_bulleted;
+        case 'Historial':
+          return Icons.history;
+        default:
+          return Icons.circle;
+      }
+    }
+
+    return ListTile(
+      contentPadding: const EdgeInsets.only(left: 72),
+      leading: Icon(
+        getIcon(),
+        color: const Color(0xFF0067AC),
+        size: 20,
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontFamily: 'HelveticaRounded',
+          color: Color(0xFF0067AC),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -1),
+      onTap: onTap,
     );
   }
 
