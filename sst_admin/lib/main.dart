@@ -11,7 +11,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Inicializar los datos de localización
+  
+  // Inicializar localización en español
   await initializeDateFormatting('es_ES', null);
   
   runApp(const MyApp());

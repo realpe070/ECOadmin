@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:flutter/foundation.dart';
-import '../../../core/services/drive_service.dart';
-import '../../../core/services/activity_service.dart';
-import 'video_selector_dialog.dart';
-import 'web_video_player.dart'; // Nuevo import
+import '../../../core/services/serv_actividades/drive_service.dart';
+import '../../../core/services/serv_actividades/activity_service.dart';
+import 'components/video_selector_dialog.dart';
+import '../../../widgets/web_video_player.dart'; // Nuevo import
 
 class CreateActivityContent extends StatefulWidget {
   const CreateActivityContent({super.key});
@@ -14,21 +12,28 @@ class CreateActivityContent extends StatefulWidget {
 }
 
 class _CreateActivityContentState extends State<CreateActivityContent> {
+  // Declaración de controladores
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _minTimeController = TextEditingController();
   final TextEditingController _maxTimeController = TextEditingController();
   final TextEditingController _videoLinkController = TextEditingController();
+  
+  // Variables de estado
   String? _selectedCategory;
   bool _showSensorSwitch = false;
   bool _sensorEnabled = false;
-  VideoPlayerController? _videoPlayerController;
-  bool _isYoutubeVideo = false;
   bool _isVideoLoading = false;
+  Map<String, dynamic>? _selectedVideo;
+  final List<String> _activityLog = [];
 
   @override
   void dispose() {
-    _videoPlayerController?.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _minTimeController.dispose();
+    _maxTimeController.dispose();
+    _videoLinkController.dispose();
     super.dispose();
   }
 
@@ -44,6 +49,7 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
 
     if (result != null && mounted) {
       setState(() {
+        _selectedVideo = result;
         _videoLinkController.text = DriveService.getVideoName(result);
         _initializeVideo(result);
       });
@@ -51,99 +57,75 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
   }
 
   Future<void> _initializeVideo(Map<String, dynamic> video) async {
-    debugPrint('🎬 Iniciando inicialización de video');
-    debugPrint('📝 Datos del video: $video');
-    
     setState(() => _isVideoLoading = true);
     try {
-      if (_videoPlayerController != null) {
-        debugPrint('🔄 Liberando controlador anterior');
-        await _videoPlayerController!.dispose();
-      }
-
       final streamUrl = DriveService.getStreamUrl(video);
-      debugPrint('🔗 Stream URL: $streamUrl');
-      
       if (streamUrl == null) throw Exception('URL de stream no válida');
-
-      debugPrint('⚙️ Creando nuevo controlador de video');
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(streamUrl),
-      );
-
-      debugPrint('🔄 Inicializando controlador');
-      await _videoPlayerController!.initialize();
-      
-      debugPrint('✅ Video inicializado correctamente');
+      setState(() => _isVideoLoading = false);
+    } catch (e) {
       if (!mounted) return;
-      
       setState(() {
         _isVideoLoading = false;
-        _isYoutubeVideo = false;
-        _videoPlayerController!.play();
-      });
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error al inicializar video: $e');
-      debugPrint('📚 StackTrace: $stackTrace');
-      
-      if (!mounted) return;
-
-      // Intento alternativo con URL de vista previa
-      try {
-        final previewUrl = video['previewUrl'] as String?;
-        if (previewUrl == null) throw Exception('URL de preview no disponible');
-
-        _videoPlayerController = VideoPlayerController.networkUrl(
-          Uri.parse(previewUrl),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cargar el video. Intente con otro video.'),
+            backgroundColor: Colors.red,
+          ),
         );
-        await _videoPlayerController!.initialize();
-        
-        setState(() {
-          _isVideoLoading = false;
-          _isYoutubeVideo = false;
-          _videoPlayerController!.play();
-        });
-      } catch (secondError) {
-        setState(() {
-          _isVideoLoading = false;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Error al cargar el video. El formato no es compatible con el navegador.',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        });
-      }
+      });
     }
   }
 
-  Future<void> _saveActivity() async {
-    // Verificar campos antes de la operación asíncrona
-    if (_videoLinkController.text.isEmpty ||
-        _nameController.text.isEmpty ||
-        _descriptionController.text.isEmpty ||
-        _minTimeController.text.isEmpty ||
-        _maxTimeController.text.isEmpty ||
-        _selectedCategory == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor complete todos los campos'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+  Future<void> _validateTimeInputs() async {
+    final minTime = int.tryParse(_minTimeController.text);
+    final maxTime = int.tryParse(_maxTimeController.text);
+
+    if (minTime == null || maxTime == null) {
+      throw Exception('Los tiempos deben ser números válidos');
     }
 
+    // Nuevos límites de tiempo
+    if (minTime < 10) {
+      throw Exception('El tiempo mínimo debe ser al menos 10 segundos');
+    }
+
+    if (maxTime > 300) { // 5 minutos máximo
+      throw Exception('El tiempo máximo no puede exceder los 5 minutos (300 segundos)');
+    }
+
+    if (maxTime <= minTime) {
+      throw Exception('El tiempo máximo debe ser mayor al tiempo mínimo');
+    }
+    
+    return Future.value();
+  }
+
+  Future<void> _saveActivity() async {
     try {
+      await _validateTimeInputs();
+
+      // Verificar campos antes de la operación asíncrona
+      if (_videoLinkController.text.isEmpty ||
+          _nameController.text.isEmpty ||
+          _descriptionController.text.isEmpty ||
+          _minTimeController.text.isEmpty ||
+          _maxTimeController.text.isEmpty ||
+          _selectedCategory == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor complete todos los campos'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       // Validar el video de Drive
       if (_videoLinkController.text.contains('drive.google.com')) {
         final isValid = await DriveService.validateDriveFile(_videoLinkController.text);
         if (!mounted) return;
-        
+
         if (!isValid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -168,6 +150,13 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
       if (!mounted) return;
 
       if (result['status'] == true) {
+        // Add log entry
+        setState(() {
+          _activityLog.add(
+            '[${DateTime.now().toString()}] Creada actividad: ${_nameController.text} - Categoría: $_selectedCategory'
+          );
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Actividad creada exitosamente'),
@@ -204,37 +193,19 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
-    if (!_isYoutubeVideo && _videoPlayerController != null) {
-      if (kIsWeb) {
-        final videoId = _videoLinkController.text.split('/').last;
-        return WebVideoPlayer(
-          embedUrl: DriveService.getEmbedUrl(videoId),
-        );
-      } else {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            AspectRatio(
-              aspectRatio: _videoPlayerController!.value.aspectRatio,
-              child: VideoPlayer(_videoPlayerController!),
-            ),
-            IconButton(
-              icon: Icon(
-                _videoPlayerController!.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                size: 50,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                setState(() {
-                  _videoPlayerController!.value.isPlaying
-                      ? _videoPlayerController!.pause()
-                      : _videoPlayerController!.play();
-                });
-              },
-            ),
-          ],
-        );
-      }
+    if (_selectedVideo != null) {
+      final videoId = _selectedVideo!['id'];
+      return KeyedSubtree( // Añadir KeyedSubtree
+        key: ValueKey(videoId), // Usar el videoId como key
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey[800],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: WebVideoPlayer(embedUrl: DriveService.getEmbedUrl(videoId)),
+        ),
+      );
     }
 
     return const Center(
@@ -276,10 +247,13 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
             const SizedBox(width: 16),
             ElevatedButton.icon(
               onPressed: _showVideoSelector,
-              icon: const Icon(Icons.video_library),
-              label: const Text('Seleccionar Video'),
+              icon: const Icon(Icons.video_library, color: Colors.white),
+              label: Text(
+                _selectedVideo == null ? 'Seleccionar Video' : 'Cambiar Video',
+                style: const TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC6DA23),
+                backgroundColor: const Color(0xFF0067AC),
                 padding: const EdgeInsets.symmetric(
                   vertical: 16,
                   horizontal: 20,
@@ -289,7 +263,7 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
           ],
         ),
         const SizedBox(height: 16),
-        if (_videoPlayerController != null || _isVideoLoading)
+        if (_selectedVideo != null || _isVideoLoading)
           Container(
             height: 250,
             decoration: BoxDecoration(
@@ -301,7 +275,295 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
               child: _buildVideoPlayer(),
             ),
           ),
+        const SizedBox(height: 16),
       ],
+    );
+  }
+
+  set sensorEnabled(bool value) {
+    setState(() {
+      _sensorEnabled = value;
+    });
+
+    if (_sensorEnabled) {
+      debugPrint('✅ Sensor de movimiento activado');
+    } else {
+      debugPrint('❌ Sensor de movimiento desactivado');
+    }
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    String? helperText,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0067AC),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: hint,
+            helperText: helperText,
+            helperStyle: const TextStyle(color: Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
+                color: Color(0xFF0067AC),
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  DropdownMenuItem<String> _buildDropdownItem(String text, IconData icon) {
+    final Map<String, IconData> categoryIcons = {
+      'Visual': Icons.visibility,
+      'Auditiva': Icons.hearing,
+      'Cognitiva': Icons.psychology, // Cambiado de "Mental" a "Cognitiva"
+      'Tren Superior': Icons.accessibility_new,
+      'Tren Inferior': Icons.directions_walk,
+      'Movilidad Articular': Icons.self_improvement,
+      'Estiramientos Generales': Icons.accessibility,
+    };
+
+    return DropdownMenuItem<String>(
+      value: text,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              categoryIcons[text] ?? Icons.circle,
+              color: const Color(0xFF0067AC),
+              size: 20
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontFamily: 'HelveticaRounded',
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Duración del Ejercicio',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0067AC),
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0067AC).withAlpha(13),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF0067AC).withAlpha(26),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Tiempo Mínimo',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF0067AC),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _minTimeController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  suffixIcon: const Tooltip(
+                                    message: 'Tiempo en segundos',
+                                    child: Icon(Icons.timer_outlined),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTimePresetButton('30s', '30'),
+                            const SizedBox(width: 4),
+                            _buildTimePresetButton('45s', '45'),
+                            const SizedBox(width: 4),
+                            _buildTimePresetButton('60s', '60'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Tiempo Máximo',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF0067AC),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _maxTimeController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  suffixIcon: const Tooltip(
+                                    message: 'Tiempo en segundos',
+                                    child: Icon(Icons.timer),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTimePresetButton('90s', '90'),
+                            const SizedBox(width: 4),
+                            _buildTimePresetButton('120s', '120'),
+                            const SizedBox(width: 4),
+                            _buildTimePresetButton('180s', '180'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0067AC).withAlpha(5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF0067AC).withAlpha(15),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.info_outline, 
+                          color: Color(0xFF0067AC),
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Guía de Tiempos Recomendados:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0067AC),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '• Ejercicios simples: 30-60 segundos\n'
+                      '• Ejercicios intermedios: 60-120 segundos\n'
+                      '• Ejercicios completos: 120-180 segundos\n'
+                      '• El tiempo mínimo debe ser al menos 10 segundos\n'
+                      '• El tiempo máximo no debe exceder 5 minutos (300 segundos)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimePresetButton(String label, String value) {
+    return InkWell(
+      onTap: () {
+        final controller = label.contains('m') ? _maxTimeController : _minTimeController;
+        controller.text = value;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0067AC),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 
@@ -350,27 +612,7 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _minTimeController,
-                    label: 'Tiempo mínimo (seg)',
-                    hint: '30',
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _maxTimeController,
-                    label: 'Tiempo máximo (seg)',
-                    hint: '60',
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
+            _buildTimeSelector(),
             const SizedBox(height: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,22 +646,13 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
                     ),
                   ),
                   items: [
-                    _buildDropdownItem(
-                      'Tren Superior',
-                      Icons.accessibility_new,
-                    ),
-                    _buildDropdownItem(
-                      'Tren Inferior',
-                      Icons.directions_walk,
-                    ),
-                    _buildDropdownItem(
-                      'Movilidad Articular',
-                      Icons.self_improvement,
-                    ),
-                    _buildDropdownItem(
-                      'Estiramientos Generales',
-                      Icons.accessibility,
-                    ),
+                    _buildDropdownItem('Visual', Icons.visibility),
+                    _buildDropdownItem('Auditiva', Icons.hearing),
+                    _buildDropdownItem('Cognitiva', Icons.psychology),
+                    _buildDropdownItem('Tren Superior', Icons.accessibility_new),
+                    _buildDropdownItem('Tren Inferior', Icons.directions_walk),
+                    _buildDropdownItem('Movilidad Articular', Icons.self_improvement),
+                    _buildDropdownItem('Estiramientos Generales', Icons.accessibility),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -476,7 +709,7 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
                       Switch(
                         value: _sensorEnabled,
                         onChanged: (value) {
-                          setState(() => _sensorEnabled = value);
+                          sensorEnabled = value;
                         },
                         activeColor: const Color(0xFF0067AC),
                       ),
@@ -532,72 +765,35 @@ class _CreateActivityContentState extends State<CreateActivityContent> {
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0067AC),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: Color(0xFF0067AC),
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  DropdownMenuItem<String> _buildDropdownItem(String text, IconData icon) {
-    return DropdownMenuItem<String>(
-      value: text,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 300),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: const Color(0xFF0067AC), size: 20),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontFamily: 'HelveticaRounded',
-                  fontSize: 14,
+            if (_activityLog.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              const Text(
+                'Registro de Actividades Creadas',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0067AC),
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
+              const SizedBox(height: 8),
+              Container(
+                height: 200,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListView.builder(
+                  itemCount: _activityLog.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(_activityLog[_activityLog.length - 1 - index]),
+                    );
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

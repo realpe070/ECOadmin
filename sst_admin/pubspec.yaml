@@ -38,7 +38,8 @@ dependencies:
   image_picker: ^1.0.7
   image_picker_web: ^3.1.1
   web: ^1.1.1
-  js: ^0.7.1
+  js: ^0.6.7
+  flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:
@@ -75,4 +76,3 @@ flutter:
     - family: HelveticaRounded
       fonts:
         - asset: assets/fonts/HelveticaRoundedBold.otf
-   

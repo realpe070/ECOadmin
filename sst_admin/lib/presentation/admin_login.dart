@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/services/platform_service.dart';
-import '../core/routes/app_routes.dart';  // Actualizado para usar la nueva ubicación
+import '../core/routes/app_routes.dart';
 import '../core/services/api_service.dart';
+import '../core/services/serv_users/auth_service.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -11,10 +12,15 @@ class AdminLoginPage extends StatefulWidget {
 }
 
 class AdminLoginPageState extends State<AdminLoginPage> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isConnected = false;
+  bool _isLoading = false;
+  String? _error;
+
+  String get _cleanEmail => usernameController.text.replaceAll(' ', '');
 
   @override
   void initState() {
@@ -42,48 +48,49 @@ class AdminLoginPageState extends State<AdminLoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    try {
-      if (!_isConnected) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ No hay conexión con el servidor'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+    if (!_formKey.currentState!.validate()) return;
 
-      final result = await ApiService().authenticateAdmin(
-        usernameController.text,
+    if (!_isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ No hay conexión con el servidor'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await AuthService.authenticateAdmin(
+        _cleanEmail,
         passwordController.text,
       );
 
       if (!mounted) return;
 
-      if (result['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${result['message'] ?? '¡Inicio de sesión exitoso!'}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pushReplacementNamed(context, AdminRoutes.dashboard);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${result['message'] ?? 'Credenciales incorrectas'}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ ¡Inicio de sesión exitoso!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacementNamed(context, AdminRoutes.dashboard);
     } catch (e) {
       if (!mounted) return;
+      setState(() => _error = e.toString());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error: ${e.toString()}'),
+          content: Text('❌ ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -156,105 +163,135 @@ class AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Color(0xFF0067AC),
-                    child: Icon(
-                      Icons.admin_panel_settings,
-                      size: 40,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    '¡Bienvenido Administrador!',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'HelveticaRounded',
-                      color: Color(0xFF0067AC),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: usernameController,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(
-                        Icons.person,
-                        color: Color(0xFF0067AC),
-                      ),
-                      labelText: 'Correo Admin',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF0067AC),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(
-                        Icons.lock,
-                        color: Color(0xFF0067AC),
-                      ),
-                      labelText: 'Contraseña',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF0067AC),
-                          width: 2,
-                        ),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: const Color(0xFF0067AC),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0067AC),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 15,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    child: const Text(
-                      'Iniciar sesión',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'HelveticaRounded',
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Color(0xFF0067AC),
+                      child: Icon(
+                        Icons.admin_panel_settings,
+                        size: 40,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 15),
+                    const Text(
+                      '¡Bienvenido Administrador!',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'HelveticaRounded',
+                        color: Color(0xFF0067AC),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextFormField(
+                      controller: usernameController,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.person,
+                          color: Color(0xFF0067AC),
+                        ),
+                        labelText: 'Correo Admin',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0xFF0067AC),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese su correo';
+                        }
+                        return null;
+                      },
+                      onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                    ),
+                    const SizedBox(height: 15),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.lock,
+                          color: Color(0xFF0067AC),
+                        ),
+                        labelText: 'Contraseña',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0xFF0067AC),
+                            width: 2,
+                          ),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: const Color(0xFF0067AC),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                      textInputAction: TextInputAction.done,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Ingrese su contraseña';
+                        }
+                        return null;
+                      },
+                      onFieldSubmitted: (_) => _handleLogin(),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0067AC),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 50,
+                          vertical: 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : const Text(
+                              'Iniciar sesión',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'HelveticaRounded',
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
