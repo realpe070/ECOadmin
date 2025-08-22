@@ -22,7 +22,8 @@ class _NotificationContentState extends State<NotificationContent> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   final Map<DateTime, List<Map<String, dynamic>>> _assignedPlans = {};
-  List<Map<String, dynamic>> _availablePlans = []; // Cambiar a lista vacía inicial
+  List<Map<String, dynamic>> _availablePlans =
+      []; // Cambiar a lista vacía inicial
 
   @override
   void initState() {
@@ -46,21 +47,23 @@ class _NotificationContentState extends State<NotificationContent> {
 
         setState(() {
           // Convertir cada plan de pausa en un plan disponible
-          _availablePlans = plans.map((plan) => {
-            'id': plan['id'],
-            'name': plan['name'],
-            'time': plan['time'] ?? '08:00',
-            'color': const Color(0xFF0067AC),
-            'isAssigned': false,
-          }).toList();
+          _availablePlans =
+              plans
+                  .map(
+                    (plan) => {
+                      'id': plan['id'],
+                      'name': plan['name'],
+                      'time': plan['time'] ?? '08:00',
+                      'color': const Color(0xFF0067AC),
+                      'isAssigned': false,
+                    },
+                  )
+                  .toList();
         });
       }
     } catch (e) {
       debugPrint('❌ Error cargando planes: $e');
-      _showSnackBar(
-        'Error cargando planes: $e',
-        backgroundColor: Colors.red,
-      );
+      _showSnackBar('Error cargando planes: $e', backgroundColor: Colors.red);
     }
   }
 
@@ -137,15 +140,9 @@ class _NotificationContentState extends State<NotificationContent> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            flex: 3,
-                            child: _buildAvailablePlans(),
-                          ),
+                          Expanded(flex: 3, child: _buildAvailablePlans()),
                           const SizedBox(width: 24),
-                          Expanded(
-                            flex: 4,
-                            child: _buildCalendar(),
-                          ),
+                          Expanded(flex: 4, child: _buildCalendar()),
                         ],
                       ),
                     ),
@@ -236,9 +233,7 @@ class _NotificationContentState extends State<NotificationContent> {
         onSurface: Color(0xFF0067AC),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF0067AC),
-        ),
+        style: TextButton.styleFrom(foregroundColor: const Color(0xFF0067AC)),
       ),
     );
 
@@ -261,9 +256,10 @@ class _NotificationContentState extends State<NotificationContent> {
           debugPrint('📅 Abriendo selector de fecha...');
 
           final now = DateTime.now();
-          final initialDate = isStartDate
-              ? now
-              : _startDateController.text.isNotEmpty
+          final initialDate =
+              isStartDate
+                  ? now
+                  : _startDateController.text.isNotEmpty
                   ? DateFormat('dd/MM/yyyy').parse(_startDateController.text)
                   : now;
 
@@ -283,10 +279,7 @@ class _NotificationContentState extends State<NotificationContent> {
             firstDate: firstDate,
             lastDate: lastDate,
             locale: const Locale('es', 'ES'),
-            builder: (context, child) => Theme(
-              data: theme,
-              child: child!,
-            ),
+            builder: (context, child) => Theme(data: theme, child: child!),
           );
 
           if (picked != null && mounted) {
@@ -328,9 +321,7 @@ class _NotificationContentState extends State<NotificationContent> {
         onSurface: Color(0xFF0067AC),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF0067AC),
-        ),
+        style: TextButton.styleFrom(foregroundColor: const Color(0xFF0067AC)),
       ),
     );
 
@@ -352,10 +343,7 @@ class _NotificationContentState extends State<NotificationContent> {
         final TimeOfDay? picked = await showTimePicker(
           context: context,
           initialTime: TimeOfDay.now(),
-          builder: (context, child) => Theme(
-            data: theme,
-            child: child!,
-          ),
+          builder: (context, child) => Theme(data: theme, child: child!),
         );
         if (picked != null) {
           setState(() {
@@ -382,10 +370,7 @@ class _NotificationContentState extends State<NotificationContent> {
             padding: EdgeInsets.all(16),
             child: Text(
               'Planes Disponibles',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
@@ -406,28 +391,29 @@ class _NotificationContentState extends State<NotificationContent> {
   void _showColorPicker(Map<String, dynamic> plan) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Seleccionar color para ${plan['name']}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Seleccionar color para ${plan['name']}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildColorOption(const Color(0xFF0067AC), plan),
-                  _buildColorOption(const Color(0xFFC6DA23), plan),
-                  _buildColorOption(const Color(0xFFFF6B6B), plan),
-                  _buildColorOption(const Color(0xFF9C27B0), plan),
-                  _buildColorOption(const Color(0xFF4CAF50), plan),
-                  _buildColorOption(const Color(0xFFFFA726), plan),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildColorOption(const Color(0xFF0067AC), plan),
+                      _buildColorOption(const Color(0xFFC6DA23), plan),
+                      _buildColorOption(const Color(0xFFFF6B6B), plan),
+                      _buildColorOption(const Color(0xFF9C27B0), plan),
+                      _buildColorOption(const Color(0xFF4CAF50), plan),
+                      _buildColorOption(const Color(0xFFFFA726), plan),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -445,10 +431,7 @@ class _NotificationContentState extends State<NotificationContent> {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-            color: Colors.white,
-            width: 2,
-          ),
+          border: Border.all(color: Colors.white, width: 2),
         ),
       ),
     );
@@ -458,7 +441,8 @@ class _NotificationContentState extends State<NotificationContent> {
     return GestureDetector(
       onSecondaryTapDown: (details) {
         if (!isTemplate) {
-          final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+          final RenderBox overlay =
+              Overlay.of(context).context.findRenderObject() as RenderBox;
           showMenu(
             context: context,
             position: RelativeRect.fromRect(
@@ -472,35 +456,39 @@ class _NotificationContentState extends State<NotificationContent> {
                   title: const Text('Cambiar color'),
                   contentPadding: EdgeInsets.zero,
                 ),
-                onTap: () => Future.delayed(
-                  const Duration(milliseconds: 200),
-                  () => _showColorPicker(plan),
-                ),
+                onTap:
+                    () => Future.delayed(
+                      const Duration(milliseconds: 200),
+                      () => _showColorPicker(plan),
+                    ),
               ),
-              if (!isTemplate) PopupMenuItem(
-                child: ListTile(
-                  leading: const Icon(Icons.delete_outline),
-                  title: const Text('Eliminar plan'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onTap: () {
-                  setState(() {
-                    final sourceDay = _selectedDay;
-                    if (sourceDay != null) {
-                      _assignedPlans[sourceDay]?.removeWhere(
-                        (p) => p['id'] == plan['id'] && p['time'] == plan['time']
-                      );
-                      if (_assignedPlans[sourceDay]?.isEmpty ?? false) {
-                        _assignedPlans.remove(sourceDay);
+              if (!isTemplate)
+                PopupMenuItem(
+                  child: ListTile(
+                    leading: const Icon(Icons.delete_outline),
+                    title: const Text('Eliminar plan'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onTap: () {
+                    setState(() {
+                      final sourceDay = _selectedDay;
+                      if (sourceDay != null) {
+                        _assignedPlans[sourceDay]?.removeWhere(
+                          (p) =>
+                              p['id'] == plan['id'] &&
+                              p['time'] == plan['time'],
+                        );
+                        if (_assignedPlans[sourceDay]?.isEmpty ?? false) {
+                          _assignedPlans.remove(sourceDay);
+                        }
+                        final originalPlan = _availablePlans.firstWhere(
+                          (p) => p['id'] == plan['id'],
+                        );
+                        originalPlan['isAssigned'] = false;
                       }
-                      final originalPlan = _availablePlans.firstWhere(
-                        (p) => p['id'] == plan['id']
-                      );
-                      originalPlan['isAssigned'] = false;
-                    }
-                  });
-                },
-              ),
+                    });
+                  },
+                ),
             ],
           );
         }
@@ -515,12 +503,18 @@ class _NotificationContentState extends State<NotificationContent> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: plan['color'] ?? const Color(0xFF0067AC)),
+              border: Border.all(
+                color: plan['color'] ?? const Color(0xFF0067AC),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.alarm, color: plan['color'] ?? const Color(0xFF0067AC), size: 20),
+                Icon(
+                  Icons.alarm,
+                  color: plan['color'] ?? const Color(0xFF0067AC),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   plan['name'],
@@ -533,10 +527,7 @@ class _NotificationContentState extends State<NotificationContent> {
             ),
           ),
         ),
-        childWhenDragging: Opacity(
-          opacity: 0.5,
-          child: _buildPlanTile(plan),
-        ),
+        childWhenDragging: Opacity(opacity: 0.5, child: _buildPlanTile(plan)),
         onDragStarted: () {
           if (isTemplate) {
             setState(() {
@@ -575,44 +566,49 @@ class _NotificationContentState extends State<NotificationContent> {
   void _showPlanOptions(Map<String, dynamic> plan) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        contentPadding: const EdgeInsets.symmetric(vertical: 20),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.color_lens),
-              title: const Text('Cambiar color'),
-              onTap: () {
-                Navigator.pop(context);
-                _showColorPicker(plan);
-              },
+      builder:
+          (context) => AlertDialog(
+            contentPadding: const EdgeInsets.symmetric(vertical: 20),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.color_lens),
+                  title: const Text('Cambiar color'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showColorPicker(plan);
+                  },
+                ),
+                if (_selectedDay != null &&
+                    _assignedPlans.containsKey(_selectedDay) &&
+                    _assignedPlans[_selectedDay]!.any(
+                      (p) => p['id'] == plan['id'],
+                    ))
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline),
+                    title: const Text('Eliminar plan'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() {
+                        _assignedPlans[_selectedDay!]?.removeWhere(
+                          (p) =>
+                              p['id'] == plan['id'] &&
+                              p['time'] == plan['time'],
+                        );
+                        if (_assignedPlans[_selectedDay!]?.isEmpty ?? false) {
+                          _assignedPlans.remove(_selectedDay);
+                        }
+                        final originalPlan = _availablePlans.firstWhere(
+                          (p) => p['id'] == plan['id'],
+                        );
+                        originalPlan['isAssigned'] = false;
+                      });
+                    },
+                  ),
+              ],
             ),
-            if (_selectedDay != null && 
-                _assignedPlans.containsKey(_selectedDay) &&
-                _assignedPlans[_selectedDay]!.any((p) => p['id'] == plan['id']))
-              ListTile(
-                leading: const Icon(Icons.delete_outline),
-                title: const Text('Eliminar plan'),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _assignedPlans[_selectedDay!]?.removeWhere(
-                      (p) => p['id'] == plan['id'] && p['time'] == plan['time']
-                    );
-                    if (_assignedPlans[_selectedDay!]?.isEmpty ?? false) {
-                      _assignedPlans.remove(_selectedDay);
-                    }
-                    final originalPlan = _availablePlans.firstWhere(
-                      (p) => p['id'] == plan['id']
-                    );
-                    originalPlan['isAssigned'] = false;
-                  });
-                },
-              ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -663,20 +659,25 @@ class _NotificationContentState extends State<NotificationContent> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: SingleChildScrollView(
-              child: _buildPlanDetailsConsole(),
-            ),
+            child: SingleChildScrollView(child: _buildPlanDetailsConsole()),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCalendarDay(DateTime day, {bool isSelected = false, bool isToday = false}) {
+  Widget _buildCalendarDay(
+    DateTime day, {
+    bool isSelected = false,
+    bool isToday = false,
+  }) {
     final hasPlans = _assignedPlans[day]?.isNotEmpty ?? false;
     final isEnabled = _isDateInRange(day);
     final plans = _assignedPlans[day] ?? [];
-    final planColor = plans.isNotEmpty ? plans.first['color'] ?? const Color(0xFFC6DA23) : const Color(0xFFC6DA23);
+    final planColor =
+        plans.isNotEmpty
+            ? plans.first['color'] ?? const Color(0xFFC6DA23)
+            : const Color(0xFFC6DA23);
 
     return DragTarget<Map<String, dynamic>>(
       onWillAcceptWithDetails: (details) {
@@ -704,11 +705,12 @@ class _NotificationContentState extends State<NotificationContent> {
         setState(() {
           final isTemplate = details.data['isTemplate'] as bool;
           final sourceDay = _selectedDay;
-          final plan = Map<String, dynamic>.from(details.data)..remove('isTemplate');
+          final plan = Map<String, dynamic>.from(details.data)
+            ..remove('isTemplate');
 
           if (!isTemplate && sourceDay != null) {
             _assignedPlans[sourceDay]?.removeWhere(
-              (p) => p['id'] == plan['id'] && p['time'] == plan['time']
+              (p) => p['id'] == plan['id'] && p['time'] == plan['time'],
             );
             if (_assignedPlans[sourceDay]?.isEmpty ?? false) {
               _assignedPlans.remove(sourceDay);
@@ -722,9 +724,15 @@ class _NotificationContentState extends State<NotificationContent> {
             _assignedPlans[day] = plans;
             _selectedDay = day;
 
-            _showSnackBar('Plan actualizado correctamente', backgroundColor: const Color(0xFFC6DA23));
+            _showSnackBar(
+              'Plan actualizado correctamente',
+              backgroundColor: const Color(0xFFC6DA23),
+            );
           } else {
-            _showSnackBar('Ya existe un plan para las ${plan['time']}', backgroundColor: Colors.orange);
+            _showSnackBar(
+              'Ya existe un plan para las ${plan['time']}',
+              backgroundColor: Colors.orange,
+            );
           }
         });
       },
@@ -847,26 +855,27 @@ class _NotificationContentState extends State<NotificationContent> {
         ),
         SizedBox(
           height: 150,
-          child: plans.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No hay planes asignados para este día',
-                    style: TextStyle(color: Colors.grey),
+          child:
+              plans.isEmpty
+                  ? const Center(
+                    child: Text(
+                      'No hay planes asignados para este día',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                  : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: plans.length,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemBuilder: (context, index) {
+                      final plan = plans[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        color: const Color(0xFFC6DA23).withAlpha(20),
+                        child: _buildDraggablePlan(plan, false),
+                      );
+                    },
                   ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: plans.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  itemBuilder: (context, index) {
-                    final plan = plans[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: const Color(0xFFC6DA23).withAlpha(20),
-                      child: _buildDraggablePlan(plan, false),
-                    );
-                  },
-                ),
         ),
       ],
     );
@@ -917,14 +926,14 @@ class _NotificationContentState extends State<NotificationContent> {
 
   void _savePlan() async {
     debugPrint('🔄 Iniciando proceso de guardado del plan...');
-    
+
     if (_formKey.currentState!.validate()) {
       try {
         debugPrint('✅ Formulario validado correctamente');
-        
+
         final startDate = _parseDate(_startDateController.text);
         final endDate = _parseDate(_endDateController.text);
-        
+
         debugPrint('📅 Validando fechas:');
         debugPrint('- Inicio: ${_startDateController.text}');
         debugPrint('- Fin: ${_endDateController.text}');
@@ -937,25 +946,51 @@ class _NotificationContentState extends State<NotificationContent> {
 
         if (_timeController.text.isEmpty) {
           debugPrint('❌ Error: Hora no seleccionada');
-          _showSnackBar('Error: Debe seleccionar una hora', backgroundColor: Colors.red);
+          _showSnackBar(
+            'Error: Debe seleccionar una hora',
+            backgroundColor: Colors.red,
+          );
           return;
         }
 
         debugPrint('📋 Validando planes asignados...');
         debugPrint('- Total días con planes: ${_assignedPlans.length}');
-        
+
         if (_assignedPlans.isEmpty) {
           debugPrint('❌ Error: No hay planes asignados');
-          _showSnackBar('Error: Debe asignar al menos un plan', backgroundColor: Colors.red);
+          _showSnackBar(
+            'Error: Debe asignar al menos un plan',
+            backgroundColor: Colors.red,
+          );
           return;
         }
 
         // Log assigned plans details
         _assignedPlans.forEach((date, plans) {
-          debugPrint('📅 Planes para ${DateFormat('dd/MM/yyyy').format(date)}:');
+          debugPrint(
+            '📅 Planes para ${DateFormat('dd/MM/yyyy').format(date)}:',
+          );
           for (var plan in plans) {
             debugPrint('  - ${plan['name']} (${plan['time']})');
           }
+        });
+
+        // Convertir los planes asignados al formato correcto
+        final convertedAssignedPlans = _assignedPlans.map((date, plans) {
+          return MapEntry(
+            date,
+            plans
+                .map(
+                  (plan) => AssignedPlanItem(
+                    id: plan['id'],
+                    name: plan['name'],
+                    time: plan['time'],
+                    color:
+                        (plan['color'] ?? const Color(0xFF0067AC)).toString(),
+                  ),
+                )
+                .toList(),
+          );
         });
 
         final notificationPlan = NotificationPlan(
@@ -963,7 +998,8 @@ class _NotificationContentState extends State<NotificationContent> {
           startDate: startDate,
           endDate: endDate,
           time: _timeController.text,
-          assignedPlans: _assignedPlans,
+          assignedPlans: convertedAssignedPlans,
+          id: '', // ID vacío ya que es un nuevo plan
         );
 
         debugPrint('📤 Preparando envío al servidor...');
@@ -978,22 +1014,23 @@ class _NotificationContentState extends State<NotificationContent> {
 
         final notificationService = NotificationService();
         debugPrint('🔄 Enviando solicitud al servidor...');
-        
-        final createdPlan = await notificationService.createNotificationPlan(notificationPlan);
+
+        final createdPlan = await notificationService.createNotificationPlan(
+          notificationPlan,
+        );
 
         debugPrint('✅ Plan creado exitosamente');
         debugPrint('📎 ID asignado: ${createdPlan.id}');
-        
+
         _showSnackBar('Plan de notificaciones guardado exitosamente');
         _clearForm();
 
         debugPrint('🎉 Proceso completado con éxito');
-
       } catch (e) {
         debugPrint('❌ Error durante el proceso de guardado:');
         debugPrint('- Mensaje: $e');
         debugPrint('- Tipo: ${e.runtimeType}');
-        
+
         _showSnackBar(
           'Error al guardar el plan: ${e.toString()}',
           backgroundColor: Colors.red,
@@ -1019,29 +1056,29 @@ class _NotificationContentState extends State<NotificationContent> {
   void _showCancelConfirmation() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancelar Plan'),
-        content: const Text('¿Estás seguro de que deseas cancelar el plan? Los cambios no guardados se perderán.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'No',
-              style: TextStyle(color: Colors.grey),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cancelar Plan'),
+            content: const Text(
+              '¿Estás seguro de que deseas cancelar el plan? Los cambios no guardados se perderán.',
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('No', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _clearForm();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade400,
+                ),
+                child: const Text('Sí, Cancelar'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _clearForm();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-            ),
-            child: const Text('Sí, Cancelar'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1060,7 +1097,8 @@ class _NotificationContentState extends State<NotificationContent> {
 
   bool _isDateInRange(DateTime day) {
     try {
-      if (_startDateController.text.isEmpty || _endDateController.text.isEmpty) {
+      if (_startDateController.text.isEmpty ||
+          _endDateController.text.isEmpty) {
         return false;
       }
 
@@ -1076,8 +1114,9 @@ class _NotificationContentState extends State<NotificationContent> {
       debugPrint('   - Inicio: ${_formatDate(startDate)}');
       debugPrint('   - Fin: ${_formatDate(endDate)}');
 
-      final isInRange = (day.isAtSameMomentAs(startDate) || day.isAfter(startDate)) &&
-                       (day.isAtSameMomentAs(endDate) || day.isBefore(endDate));
+      final isInRange =
+          (day.isAtSameMomentAs(startDate) || day.isAfter(startDate)) &&
+          (day.isAtSameMomentAs(endDate) || day.isBefore(endDate));
 
       debugPrint('   - ¿En rango?: $isInRange');
       return isInRange;

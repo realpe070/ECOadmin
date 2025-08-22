@@ -43,10 +43,15 @@ class PlanService {
       final planData = {
         'name': name.trim(),
         'description': description.trim(),
-        'activities': activities.map((activity) => {
-          'activityId': activity['id'],
-          'order': activities.indexOf(activity),
-        }).toList(),
+        'activities':
+            activities
+                .map(
+                  (activity) => {
+                    'activityId': activity['id'],
+                    'order': activities.indexOf(activity),
+                  },
+                )
+                .toList(),
         'createdAt': DateTime.now().toIso8601String(),
       };
 
@@ -71,11 +76,13 @@ class PlanService {
     }
   }
 
-  static Future<Map<String, dynamic>> createPausePlan(Map<String, dynamic> planData) async {
+  static Future<Map<String, dynamic>> createPausePlan(
+    Map<String, dynamic> planData,
+  ) async {
     try {
       debugPrint('🔄 Iniciando creación de plan de pausas...');
       debugPrint('📦 Datos del plan: ${json.encode(planData)}');
-      
+
       final token = await AuthService.getAdminToken();
       if (token == null) {
         throw Exception('No se encontró un token de administrador');
@@ -90,7 +97,7 @@ class PlanService {
       if (response['status'] == true) {
         debugPrint('✅ Plan de pausas creado exitosamente');
         debugPrint('📎 ID del plan: ${response['data']['id']}');
-        
+
         // Notificar al servicio de notificaciones
         try {
           await NotificationService().onPausePlanCreated(response['data']);
@@ -98,10 +105,10 @@ class PlanService {
         } catch (e) {
           debugPrint('⚠️ Error al sincronizar con notificaciones: $e');
         }
-        
+
         return response;
       }
-      
+
       throw Exception(response['message']);
     } catch (e) {
       debugPrint('❌ Error creando plan de pausas: $e');
@@ -112,7 +119,7 @@ class PlanService {
   static Future<List<Map<String, dynamic>>> getPlans() async {
     try {
       debugPrint('📝 Solicitando lista de planes...');
-      
+
       final token = await AuthService.getAdminToken();
       if (token == null) {
         throw Exception('No se encontró un token de administrador');
@@ -122,7 +129,7 @@ class PlanService {
         '/admin/plans',
         query: {'includeDetails': 'true'}, // Solicitar detalles completos
       );
-      
+
       if (response['status'] == true && response['data'] != null) {
         final plans = List<Map<String, dynamic>>.from(response['data']);
         debugPrint('✅ Planes cargados: ${plans.length}');
@@ -142,7 +149,6 @@ class PlanService {
   }) async {
     try {
       debugPrint('📝 Actualizando plan $id...');
-      
       final token = await AuthService.getAdminToken();
       if (token == null) {
         throw Exception('No se encontró un token de administrador');
@@ -150,18 +156,23 @@ class PlanService {
 
       // Preparar datos en el formato correcto
       final planData = {
-        'name': plan['name'],
-        'description': plan['description'],
-        'activities': (plan['activities'] as List).map((activity) => {
-          'activityId': activity['activityId'] ?? activity['id'],
-          'order': activity['order'],
-        }).toList(),
+        'name': plan['name'] as String,
+        'description': plan['description'] as String,
+        'activities':
+            (plan['activities'] as List)
+                .map(
+                  (activity) => {
+                    'activityId': activity['id'] ?? activity['activityId'],
+                    'order': activity['order'],
+                  },
+                )
+                .toList(),
       };
 
       debugPrint('📦 Datos a enviar: $planData');
 
       final response = await ApiService().put(
-        endpoint: '/admin/plans/$id', // Corregido el endpoint
+        endpoint: '/admin/plans/$id',
         data: planData,
         token: token,
       );
@@ -180,7 +191,7 @@ class PlanService {
   static Future<void> deletePlan(String id) async {
     try {
       debugPrint('🗑️ Eliminando plan $id...');
-      
+
       final token = await AuthService.getAdminToken();
       if (token == null) {
         throw Exception('No se encontró un token de administrador');

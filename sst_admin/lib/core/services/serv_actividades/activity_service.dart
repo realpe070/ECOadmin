@@ -26,15 +26,21 @@ class ActivityService {
 
       // Validaciones detalladas
       if (minTime <= 0) {
-        throw Exception('El tiempo mínimo debe ser mayor a 0 segundos (recibido: $minTime)');
+        throw Exception(
+          'El tiempo mínimo debe ser mayor a 0 segundos (recibido: $minTime)',
+        );
       }
 
       if (maxTime <= 0) {
-        throw Exception('El tiempo máximo debe ser mayor a 0 segundos (recibido: $maxTime)');
+        throw Exception(
+          'El tiempo máximo debe ser mayor a 0 segundos (recibido: $maxTime)',
+        );
       }
 
       if (maxTime <= minTime) {
-        throw Exception('El tiempo máximo ($maxTime) debe ser mayor al tiempo mínimo ($minTime)');
+        throw Exception(
+          'El tiempo máximo ($maxTime) debe ser mayor al tiempo mínimo ($minTime)',
+        );
       }
 
       // Validación adicional del ID del video
@@ -51,20 +57,20 @@ class ActivityService {
       }
 
       final activityData = {
-        'name': name,
-        'description': description,
+        'name': name.trim(),
+        'description': description.trim(),
         'minTime': minTime,
         'maxTime': maxTime,
         'category': category,
         'videoUrl': cleanVideoUrl,
         'sensorEnabled': sensorEnabled,
-        'createdAt': DateTime.now().toIso8601String(),
+        // Remove createdAt from request, let backend handle it
       };
 
       debugPrint('📦 Enviando datos al servidor: $activityData');
 
       final response = await ApiService().post(
-        endpoint: '/admin/activities/create',
+        endpoint: '/admin/activities',
         data: activityData,
         token: token,
       );
@@ -81,15 +87,26 @@ class ActivityService {
   static Future<List<Map<String, dynamic>>> getActivities() async {
     try {
       debugPrint('📝 Solicitando lista de actividades...');
-      
-      final token = await AuthService.getAdminToken();
+
+      // Try to get token with refresh
+      String? token;
+      for (int i = 0; i < 2; i++) {
+        token = await AuthService.getAdminToken(forceRefresh: i > 0);
+        if (token != null) break;
+        if (i == 0) await Future.delayed(const Duration(milliseconds: 500));
+      }
+
       if (token == null) {
         throw Exception('No se encontró un token de administrador');
       }
 
-      final response = await ApiService().get('/admin/activities');
-      
+      final response = await ApiService().get(
+        '/admin/activities',
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
       if (response['status'] == true && response['data'] != null) {
+        debugPrint('✅ Actividades cargadas exitosamente');
         return List<Map<String, dynamic>>.from(response['data']);
       }
 
@@ -111,27 +128,49 @@ class ActivityService {
     required bool sensorEnabled,
   }) async {
     try {
-      debugPrint('📝 Actualizando actividad $id...');
-      
-      final token = await AuthService.getAdminToken();
-      if (token == null) {
-        throw Exception('No se encontró un token de administrador');
+      // Validate inputs first
+      if (name.trim().isEmpty) {
+        throw Exception('El nombre no puede estar vacío');
+      }
+      if (description.trim().isEmpty) {
+        throw Exception('La descripción no puede estar vacía');
+      }
+      if (minTime < 10 || minTime > maxTime) {
+        throw Exception('Tiempo mínimo inválido');
+      }
+      if (maxTime > 300) {
+        throw Exception('Tiempo máximo no puede exceder 300 segundos');
       }
 
-      final activityData = {
-        'name': name,
-        'description': description,
+      // Get fresh token with retry logic
+      String? token;
+      for (int i = 0; i < 2; i++) {
+        token = await AuthService.getAdminToken(forceRefresh: i > 0);
+        if (token != null) break;
+        if (i == 0) {
+          debugPrint('🔄 Intentando refrescar token...');
+          continue;
+        }
+      }
+
+      if (token == null) {
+        throw Exception('No se pudo obtener un token válido');
+      }
+
+      final sanitizedData = {
+        'name': _sanitizeString(name),
+        'description': _sanitizeString(description),
         'minTime': minTime,
         'maxTime': maxTime,
         'category': category,
-        'videoUrl': videoUrl,
+        'videoUrl': _sanitizeString(videoUrl),
         'sensorEnabled': sensorEnabled,
-        'updatedAt': DateTime.now().toIso8601String(), // Agregar timestamp de actualización
       };
 
+      debugPrint('📤 Enviando actualización a servidor...');
       final response = await ApiService().put(
-        endpoint: '/admin/activities/update/$id', // Modificado el endpoint
-        data: activityData,
+        endpoint: '/admin/activities/$id',
+        data: sanitizedData,
         token: token,
       );
 
@@ -143,23 +182,64 @@ class ActivityService {
     }
   }
 
+  static String _sanitizeString(String value) {
+    return value
+        .replaceAll(RegExp(r'[\u0000-\u001F\u007F-\u009F]'), '')
+        .replaceAll(RegExp(r'[\uD800-\uDFFF]'), '')
+        .trim();
+  }
+
   static Future<void> deleteActivity(String id) async {
     try {
-      debugPrint('🗑️ Eliminando actividad $id...');
-      
-      final token = await AuthService.getAdminToken();
-      if (token == null) {
-        throw Exception('No se encontró un token de administrador');
+      debugPrint('🗑️ Eliminando actividad: $id');
+
+      if (id.isEmpty) {
+        throw Exception('ID de actividad no válido');
       }
 
-      await ApiService().delete(
-        endpoint: '/admin/activities/$id',
+      final token = await AuthService.getAdminToken();
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
+
+      final response = await ApiService().delete(
+        endpoint: 'admin/activities/$id', // Sin slash inicial
         token: token,
       );
+
+      if (response['status'] != true) {
+        throw Exception(response['message'] ?? 'Error eliminando actividad');
+      }
 
       debugPrint('✅ Actividad eliminada exitosamente');
     } catch (e) {
       debugPrint('❌ Error eliminando actividad: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> deleteMultipleActivities(List<String> ids) async {
+    try {
+      debugPrint('🗑️ Eliminando ${ids.length} actividades...');
+
+      final token = await AuthService.getAdminToken();
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
+
+      // Eliminar actividades en paralelo
+      await Future.wait(
+        ids.map(
+          (id) => ApiService().delete(
+            endpoint: 'admin/activities/$id',
+            token: token,
+          ),
+        ),
+      );
+
+      debugPrint('✅ ${ids.length} actividades eliminadas exitosamente');
+    } catch (e) {
+      debugPrint('❌ Error eliminando múltiples actividades: $e');
       rethrow;
     }
   }

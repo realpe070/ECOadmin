@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/process_upload_service.dart';
-import '../../../core/services/process_group_service.dart';
+import '../../../core/services/serv_actividades/process_group_service.dart';
 import '../../../core/services/serv_actividades/plan_service.dart';
 import '../../../data/models/process_group.dart';
 
@@ -65,9 +65,10 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
           _buildHeader(),
           const SizedBox(height: 32),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildContent(),
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildContent(),
           ),
         ],
       ),
@@ -129,23 +130,28 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
   Widget _buildGroupSelection() {
     return DropdownButtonFormField<String>(
       value: _selectedGroupId,
-      items: _groups.map((group) => DropdownMenuItem(
-        value: group.id,
-        child: Row(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: group.color,
-                shape: BoxShape.circle,
-              ),
-            ),
-            Text(group.name),
-          ],
-        ),
-      )).toList(),
+      items:
+          _groups
+              .map(
+                (group) => DropdownMenuItem(
+                  value: group.id,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: group.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text(group.name),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
       onChanged: (value) => setState(() => _selectedGroupId = value),
       decoration: const InputDecoration(
         labelText: 'Seleccionar Grupo',
@@ -183,7 +189,9 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFF4CAF50).withAlpha(26),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(11),
+              ),
             ),
             child: Row(
               children: [
@@ -213,9 +221,10 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   child: RadioListTile<String>(
                     value: planId,
-                    groupValue: _selectedPausePlanIds.isNotEmpty
-                        ? _selectedPausePlanIds.first
-                        : null,
+                    groupValue:
+                        _selectedPausePlanIds.isNotEmpty
+                            ? _selectedPausePlanIds.first
+                            : null,
                     onChanged: (value) {
                       debugPrint('🔄 Cambio en selección de Plan de Pausa:');
                       debugPrint('- Plan seleccionado: $value');
@@ -225,7 +234,9 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
                           _selectedPausePlanIds.add(value);
                         }
                       });
-                      debugPrint('- Planes seleccionados: $_selectedPausePlanIds');
+                      debugPrint(
+                        '- Planes seleccionados: $_selectedPausePlanIds',
+                      );
                     },
                     title: Text(
                       plan['name'] ?? 'Sin nombre',
@@ -254,10 +265,7 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
           label: const Text('Cancelar'),
           style: TextButton.styleFrom(
             foregroundColor: Colors.red,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
         ),
         const SizedBox(width: 16),
@@ -268,10 +276,7 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF4CAF50),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -314,16 +319,14 @@ class _ProcessUploadContentState extends State<ProcessUploadContent> {
       if (!mounted) return;
 
       _showSnackBar('Proceso subido exitosamente');
-      _cancelUpload(); // Clear the form after upload
+      _cancelUpload();
 
-      // Refresh the list of pause plans to reflect the removal
       final updatedPausePlans = await PlanService.getPlans();
       setState(() {
         _pausePlans = updatedPausePlans;
       });
 
       debugPrint('📦 Respuesta del servidor: $response');
-
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('Error al subir el proceso: $e', isError: true);

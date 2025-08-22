@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import './api_service.dart';
-import './serv_users/auth_service.dart';
-import '../../data/models/process_group.dart';
-import '../../data/models/user.dart';
+import '../api_service.dart';
+import '../serv_users/auth_service.dart';
+import '../../../data/models/process_group.dart';
+import '../../../data/models/user.dart';
 
 class ProcessGroupService {
   static final ProcessGroupService _instance = ProcessGroupService._internal();
@@ -15,7 +15,7 @@ class ProcessGroupService {
     try {
       debugPrint('🔄 Obteniendo grupos de proceso...');
       final token = await AuthService.getAdminToken();
-      
+
       if (token == null) {
         throw Exception('No autorizado');
       }
@@ -26,13 +26,14 @@ class ProcessGroupService {
       );
 
       if (response['status'] == true) {
-        final groups = (response['data'] as List)
-            .map((group) => ProcessGroup.fromJson(group))
-            .toList();
+        final groups =
+            (response['data'] as List)
+                .map((group) => ProcessGroup.fromJson(group))
+                .toList();
         debugPrint('✅ ${groups.length} grupos obtenidos');
         return groups;
       }
-      
+
       throw Exception(response['message'] ?? 'Error obteniendo grupos');
     } catch (e) {
       debugPrint('❌ Error en getGroups: $e');
@@ -54,7 +55,8 @@ class ProcessGroupService {
         throw Exception('No autorizado');
       }
 
-      final hexColor = color.toHex(); // Usando el método de extensión actualizado
+      final hexColor =
+          color.toHex(); // Usando el método de extensión actualizado
 
       final response = await _apiService.post(
         endpoint: '/admin/process-groups',
@@ -108,23 +110,27 @@ class ProcessGroupService {
 
   Future<void> deleteGroup(String groupId) async {
     try {
-      debugPrint('🔄 Eliminando grupo $groupId...');
-      final token = await AuthService.getAdminToken();
+      debugPrint('🗑️ Eliminando grupo: $groupId');
 
+      if (groupId.isEmpty) {
+        throw Exception('ID del grupo no válido');
+      }
+
+      final token = await AuthService.getAdminToken();
       if (token == null) {
-        throw Exception('No autorizado');
+        throw Exception('No se encontró token de autenticación');
       }
 
       final response = await _apiService.delete(
-        endpoint: '/admin/process-groups/$groupId',
+        endpoint: 'admin/process-groups/$groupId', // Sin slash inicial
         token: token,
       );
 
       if (response['status'] != true) {
-        throw Exception(response['message'] ?? 'Error eliminando grupo');
+        throw Exception(response['message'] ?? 'Error eliminando el grupo');
       }
 
-      debugPrint('✅ Grupo eliminado exitosamente');
+      debugPrint('✅ Grupo eliminado correctamente');
     } catch (e) {
       debugPrint('❌ Error en deleteGroup: $e');
       rethrow;
@@ -146,11 +152,16 @@ class ProcessGroupService {
       final response = await _apiService.put(
         endpoint: '/admin/process-groups/$groupId/members',
         data: {
-          'members': members.map((user) => ({
-            'id': user.id,
-            'name': user.name,
-            'email': user.email,
-          })).toList(),
+          'members':
+              members
+                  .map(
+                    (user) => ({
+                      'id': user.id,
+                      'name': user.name,
+                      'email': user.email,
+                    }),
+                  )
+                  .toList(),
         },
         token: token,
       );

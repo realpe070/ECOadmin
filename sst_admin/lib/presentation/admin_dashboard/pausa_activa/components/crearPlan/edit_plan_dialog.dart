@@ -27,7 +27,7 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
   Future<void> _initializeData() async {
     try {
       setState(() => _isLoading = true);
-      
+
       // Cargar datos del plan actual
       _nameController.text = widget.plan['name'] ?? '';
       _descriptionController.text = widget.plan['description'] ?? '';
@@ -35,19 +35,23 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
       // Obtener actividades completas
       final activities = await ActivityService.getActivities();
       final selectedActivityIds = List<String>.from(
-        widget.plan['activities']?.map((a) => a['activityId'] ?? a['id']) ?? []
+        widget.plan['activities']?.map((a) => a['activityId'] ?? a['id']) ?? [],
       );
 
       // Filtrar actividades seleccionadas
-      final selectedActivities = activities.where(
-        (activity) => selectedActivityIds.contains(activity['id'])
-      ).toList();
+      final selectedActivities =
+          activities
+              .where((activity) => selectedActivityIds.contains(activity['id']))
+              .toList();
 
       if (mounted) {
         setState(() {
-          _availableActivities = activities.where(
-            (activity) => !selectedActivityIds.contains(activity['id'])
-          ).toList();
+          _availableActivities =
+              activities
+                  .where(
+                    (activity) => !selectedActivityIds.contains(activity['id']),
+                  )
+                  .toList();
           _selectedActivities = selectedActivities;
           _isLoading = false;
         });
@@ -56,9 +60,9 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
         });
       }
     }
@@ -75,23 +79,27 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
       }
 
       final updatedPlan = {
-        ...widget.plan,
+        'id': widget.plan['id'],
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'activities': _selectedActivities.asMap().entries.map((entry) => {
-          'activityId': entry.value['id'],
-          'order': entry.key,
-        }).toList(),
+        'activities':
+            _selectedActivities
+                .asMap()
+                .entries
+                .map(
+                  (entry) => {
+                    'activityId': entry.value['id'],
+                    'order': entry.key,
+                  },
+                )
+                .toList(),
       };
 
-      await PlanService.updatePlan(
-        id: widget.plan['id'],
-        plan: updatedPlan,
-      );
+      await PlanService.updatePlan(id: widget.plan['id'], plan: updatedPlan);
 
       if (!mounted) return;
       Navigator.pop(context, true);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✅ Plan actualizado exitosamente'),
@@ -132,8 +140,10 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
                     itemCount: _availableActivities.length,
                     itemBuilder: (context, index) {
                       final activity = _availableActivities[index];
-                      final categoryColor = _getCategoryColor(activity['category']);
-                      
+                      final categoryColor = _getCategoryColor(
+                        activity['category'],
+                      );
+
                       return Draggable<Map<String, dynamic>>(
                         data: activity,
                         feedback: Material(
@@ -157,7 +167,10 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
                               ],
                             ),
                             child: ListTile(
-                              leading: Icon(_getCategoryIcon(activity['category']), color: categoryColor),
+                              leading: Icon(
+                                _getCategoryIcon(activity['category']),
+                                color: categoryColor,
+                              ),
                               title: Text(
                                 activity['name'] ?? '',
                                 style: TextStyle(
@@ -219,17 +232,20 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
                     builder: (context, candidateData, rejectedData) {
                       return Container(
                         decoration: BoxDecoration(
-                          color: candidateData.isNotEmpty
-                              ? const Color(0xFF0067AC).withAlpha(20)
-                              : null,
+                          color:
+                              candidateData.isNotEmpty
+                                  ? const Color(0xFF0067AC).withAlpha(20)
+                                  : null,
                         ),
                         child: ReorderableListView.builder(
                           padding: const EdgeInsets.all(8),
                           itemCount: _selectedActivities.length,
                           itemBuilder: (context, index) {
                             final activity = _selectedActivities[index];
-                            final categoryColor = _getCategoryColor(activity['category']);
-                            
+                            final categoryColor = _getCategoryColor(
+                              activity['category'],
+                            );
+
                             return Card(
                               key: ObjectKey('${activity['id']}_$index'),
                               elevation: 0,
@@ -294,7 +310,9 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
                               if (oldIndex < newIndex) {
                                 newIndex -= 1;
                               }
-                              final item = _selectedActivities.removeAt(oldIndex);
+                              final item = _selectedActivities.removeAt(
+                                oldIndex,
+                              );
                               _selectedActivities.insert(newIndex, item);
                             });
                           },
@@ -313,7 +331,7 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
 
   Widget _buildActivityCard(Map<String, dynamic> activity) {
     final categoryColor = _getCategoryColor(activity['category']);
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       elevation: 0,
@@ -327,9 +345,12 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
 
   Widget _buildActivityTile(Map<String, dynamic> activity) {
     final categoryColor = _getCategoryColor(activity['category']);
-    
+
     return ListTile(
-      leading: Icon(_getCategoryIcon(activity['category']), color: categoryColor),
+      leading: Icon(
+        _getCategoryIcon(activity['category']),
+        color: categoryColor,
+      ),
       title: Text(
         activity['name'] ?? '',
         style: const TextStyle(fontWeight: FontWeight.w500),
@@ -443,71 +464,74 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
             ),
             // Content
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Campos de texto estilizados
-                          _buildStyledTextField(
-                            controller: _nameController,
-                            label: 'Nombre del Plan',
-                            hint: 'Ingrese el nombre del plan',
-                          ),
-                          const SizedBox(height: 24),
-                          _buildStyledTextField(
-                            controller: _descriptionController,
-                            label: 'Descripción',
-                            hint: 'Describa el propósito y objetivos del plan',
-                            maxLines: 4,
-                          ),
-                          const SizedBox(height: 24),
-                          // Panel de actividades
-                          Container(
-                            height: 400,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFF0067AC).withAlpha(20),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF0067AC).withAlpha(10),
-                                  blurRadius: 10,
-                                ),
-                              ],
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Campos de texto estilizados
+                            _buildStyledTextField(
+                              controller: _nameController,
+                              label: 'Nombre del Plan',
+                              hint: 'Ingrese el nombre del plan',
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildActivitiesHeader(),
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildDraggableActivitiesList(),
-                                      ),
-                                    ],
+                            const SizedBox(height: 24),
+                            _buildStyledTextField(
+                              controller: _descriptionController,
+                              label: 'Descripción',
+                              hint:
+                                  'Describa el propósito y objetivos del plan',
+                              maxLines: 4,
+                            ),
+                            const SizedBox(height: 24),
+                            // Panel de actividades
+                            Container(
+                              height: 400,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFF0067AC).withAlpha(20),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF0067AC,
+                                    ).withAlpha(10),
+                                    blurRadius: 10,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildActivitiesHeader(),
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child:
+                                              _buildDraggableActivitiesList(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
             ),
             // Footer
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(
-                    color: const Color(0xFF0067AC).withAlpha(20),
-                  ),
+                  top: BorderSide(color: const Color(0xFF0067AC).withAlpha(20)),
                 ),
               ),
               child: Row(
@@ -565,9 +589,7 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
         color: const Color(0xFF0067AC).withAlpha(5),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFF0067AC).withAlpha(20),
-          ),
+          bottom: BorderSide(color: const Color(0xFF0067AC).withAlpha(20)),
         ),
       ),
       child: Row(
@@ -607,10 +629,10 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
       0,
       (sum, activity) => sum + (activity['maxTime'] as int? ?? 0),
     );
-    
+
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
-    
+
     if (minutes == 0) {
       return '$totalSeconds segundos';
     } else if (seconds == 0) {
@@ -652,10 +674,7 @@ class _EditPlanDialogState extends State<EditPlanDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: Color(0xFF0067AC),
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: Color(0xFF0067AC), width: 2),
             ),
           ),
         ),

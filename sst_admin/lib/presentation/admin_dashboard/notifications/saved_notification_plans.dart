@@ -39,14 +39,13 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
 
       debugPrint('🔄 Cargando planes de notificaciones...');
       final plans = await _notificationService.getNotificationPlans();
-      
+
       if (!mounted) return;
       setState(() {
         _plans = plans;
         _isLoading = false;
       });
       debugPrint('✅ Planes cargados: ${plans.length}');
-
     } catch (e) {
       debugPrint('❌ Error cargando planes: $e');
       if (!mounted) return;
@@ -63,19 +62,16 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       await _notificationService.deleteNotification(plan.id);
-      
+
       if (!mounted) return;
       Navigator.pop(context); // Cerrar loading
 
       _showSnackBar('✅ Plan eliminado exitosamente');
       _loadPlans();
-
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Cerrar loading
@@ -85,29 +81,34 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
 
   Future<void> _togglePlanStatus(NotificationPlan plan) async {
     try {
-      // Mostrar loading solo en la tarjeta específica
+      debugPrint('🔄 Intentando actualizar estado del plan: ${plan.id}');
+
+      if (plan.id.trim().isEmpty) {
+        throw Exception('ID de plan no válido o vacío');
+      }
+
       setState(() {
-        plan.isLoading = true; // Añadir esta propiedad al modelo NotificationPlan
+        plan.isLoading = true;
       });
-      
-      await _notificationService.updateNotificationPlanStatus(
-        plan.id, 
-        !plan.isActive
+
+      await _notificationService.updatePlanStatus(
+        plan.id.trim(),
+        !plan.isActive,
       );
-      
+
+      setState(() {
+        plan.isActive = !plan.isActive;
+      });
+
       _showSnackBar(
-        '✅ Estado actualizado: ${!plan.isActive ? 'Activo' : 'Inactivo'}',
-        backgroundColor: !plan.isActive ? Colors.green : Colors.orange,
+        '✅ Estado actualizado: ${plan.isActive ? 'Activo' : 'Inactivo'}',
+        backgroundColor: plan.isActive ? Colors.green : Colors.orange,
       );
-      
+
       await _loadPlans();
-      
     } catch (e) {
       debugPrint('❌ Error actualizando estado: $e');
-      _showSnackBar(
-        '❌ Error actualizando estado: $e',
-        backgroundColor: Colors.red,
-      );
+      _showSnackBar('❌ Error: ${e.toString()}', backgroundColor: Colors.red);
     } finally {
       if (mounted) {
         setState(() {
@@ -117,23 +118,34 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
     }
   }
 
-  void _showSnackBar(String message, {bool isError = false, Color? backgroundColor}) {
+  void _showSnackBar(
+    String message, {
+    bool isError = false,
+    Color? backgroundColor,
+  }) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: backgroundColor ?? (isError ? Colors.red : Colors.green),
+        backgroundColor:
+            backgroundColor ?? (isError ? Colors.red : Colors.green),
       ),
     );
   }
 
-  List<NotificationPlan> get _filteredPlans => _plans.where((plan) =>
-    plan.name.toLowerCase().contains(_searchQuery.toLowerCase())
-  ).toList();
+  List<NotificationPlan> get _filteredPlans =>
+      _plans
+          .where(
+            (plan) =>
+                plan.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+          )
+          .toList();
 
   Widget _buildPlanCard(NotificationPlan plan) {
-    final totalPlans = plan.assignedPlans.values
-        .fold<int>(0, (sum, plans) => sum + plans.length);
+    final totalPlans = plan.assignedPlans.values.fold<int>(
+      0,
+      (sum, plans) => sum + plans.length,
+    );
 
     return Card(
       elevation: 2,
@@ -186,18 +198,22 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
                       _showDeleteConfirmation(plan);
                     }
                   },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Eliminar', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
+                  itemBuilder:
+                      (context) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text(
+                                'Eliminar',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                 ),
               ],
             ),
@@ -207,11 +223,7 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
               '${DateFormat('dd/MM/yyyy').format(plan.startDate)} - ${DateFormat('dd/MM/yyyy').format(plan.endDate)}',
               Icons.date_range,
             ),
-            _buildInfoRow(
-              'Hora de notificación',
-              plan.time,
-              Icons.access_time,
-            ),
+            _buildInfoRow('Hora de notificación', plan.time, Icons.access_time),
             _buildInfoRow(
               'Total de planes',
               '$totalPlans planes programados',
@@ -230,11 +242,15 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: plan.isActive 
-                        ? Colors.green.withAlpha(26)
-                        : Colors.grey.withAlpha(26),
+                    color:
+                        plan.isActive
+                            ? Colors.green.withAlpha(26)
+                            : Colors.grey.withAlpha(26),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -260,18 +276,16 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
                 const Spacer(),
                 plan.isLoading
                     ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                     : Switch(
-                        value: plan.isActive,
-                        activeColor: Colors.green,
-                        inactiveTrackColor: Colors.red.withAlpha(100),
-                        onChanged: (value) => _togglePlanStatus(plan),
-                      ),
+                      value: plan.isActive,
+                      activeColor: Colors.green,
+                      inactiveTrackColor: Colors.red.withAlpha(100),
+                      onChanged: (value) => _togglePlanStatus(plan),
+                    ),
               ],
             ),
           ],
@@ -303,27 +317,28 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
   void _showDeleteConfirmation(NotificationPlan plan) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro de eliminar el plan "${plan.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmar eliminación'),
+            content: Text('¿Está seguro de eliminar el plan "${plan.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deletePlan(plan);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Eliminar'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deletePlan(plan);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -362,15 +377,16 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(13),
-                  blurRadius: 10,
-                ),
+                BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 10),
               ],
             ),
             child: Row(
               children: [
-                const Icon(Icons.access_time, size: 32, color: Color(0xFF0067AC)),
+                const Icon(
+                  Icons.access_time,
+                  size: 32,
+                  color: Color(0xFF0067AC),
+                ),
                 const SizedBox(width: 16),
                 const Text(
                   'Planes de Notificaciones Guardados',
@@ -426,10 +442,7 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
                   const SizedBox(height: 16),
                   Text(
                     'No hay planes guardados',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -444,7 +457,8 @@ class _SavedNotificationPlansState extends State<SavedNotificationPlans> {
                   mainAxisSpacing: 24,
                 ),
                 itemCount: _filteredPlans.length,
-                itemBuilder: (context, index) => _buildPlanCard(_filteredPlans[index]),
+                itemBuilder:
+                    (context, index) => _buildPlanCard(_filteredPlans[index]),
               ),
             ),
         ],

@@ -39,12 +39,14 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
   Future<void> _savePlan() async {
     try {
       // Validaciones
-      if (_nameController.text.isEmpty || 
+      if (_nameController.text.isEmpty ||
           _descriptionController.text.isEmpty ||
           _selectedActivities.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Por favor complete todos los campos y agregue al menos una actividad'),
+            content: Text(
+              'Por favor complete todos los campos y agregue al menos una actividad',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -54,41 +56,50 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
       // Mostrar diálogo de confirmación
       final confirm = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirmar Creación'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('¿Está seguro de crear el plan con los siguientes datos?'),
-              const SizedBox(height: 16),
-              Text('Nombre: ${_nameController.text}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('Actividades: ${_selectedActivities.length}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('Duración Total: ${_calculateTotalDuration()}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0067AC),
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Confirmar Creación'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '¿Está seguro de crear el plan con los siguientes datos?',
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Nombre: ${_nameController.text}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Actividades: ${_selectedActivities.length}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Duración Total: ${_calculateTotalDuration()}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              child: const Text(
-                'Crear Plan',
-                style: TextStyle(color: Colors.white),
-              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0067AC),
+                  ),
+                  child: const Text(
+                    'Crear Plan',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       );
 
       if (confirm != true) return;
@@ -98,22 +109,31 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0067AC),
-          ),
-        ),
+        builder:
+            (context) => const Center(
+              child: CircularProgressIndicator(color: Color(0xFF0067AC)),
+            ),
       );
 
       // Preparar datos para el backend
       final result = await PlanService.createPlan(
         name: _nameController.text,
         description: _descriptionController.text,
-        activities: _selectedActivities.asMap().entries.map((entry) => {
-          'id': entry.value['id'], // Asegurarse de que el ID esté presente
-          'activityId': entry.value['id'], // Campo requerido por el backend
-          'order': entry.key, // Usar el índice como orden
-        }).toList(),
+        activities:
+            _selectedActivities
+                .asMap()
+                .entries
+                .map(
+                  (entry) => {
+                    'id':
+                        entry
+                            .value['id'], // Asegurarse de que el ID esté presente
+                    'activityId':
+                        entry.value['id'], // Campo requerido por el backend
+                    'order': entry.key, // Usar el índice como orden
+                  },
+                )
+                .toList(),
       );
 
       if (!mounted) return;
@@ -234,22 +254,28 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
                       _buildTextField(
                         controller: _descriptionController,
                         label: 'Descripción',
-                        hint: 'Describa el plan de pausas activas\n\nEjemplo:\n- Objetivo del plan\n- Recomendaciones\n- Población objetivo\n- Frecuencia recomendada',
+                        hint:
+                            'Describa el plan de pausas activas\n\nEjemplo:\n- Objetivo del plan\n- Recomendaciones\n- Población objetivo\n- Frecuencia recomendada',
                         maxLines: 12, // Aumentado de 3 a 12 líneas
                       ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0067AC).withAlpha(13), // Cambiado de withOpacity(0.05)
+                          color: const Color(
+                            0xFF0067AC,
+                          ).withAlpha(13), // Cambiado de withOpacity(0.05)
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color(0xFF0067AC).withAlpha(26), // Cambiado de withOpacity(0.1)
+                            color: const Color(
+                              0xFF0067AC,
+                            ).withAlpha(26), // Cambiado de withOpacity(0.1)
                           ),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline, 
+                            Icon(
+                              Icons.info_outline,
                               color: Color(0xFF0067AC),
                               size: 20,
                             ),
@@ -285,9 +311,7 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
                     child: Row(
                       children: [
                         // Lista de actividades disponibles
-                        Expanded(
-                          child: _buildAvailableActivitiesList(),
-                        ),
+                        Expanded(child: _buildAvailableActivitiesList()),
                         // Botones de acción
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -309,9 +333,7 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
                           ],
                         ),
                         // Lista de actividades seleccionadas
-                        Expanded(
-                          child: _buildSelectedActivitiesList(),
-                        ),
+                        Expanded(child: _buildSelectedActivitiesList()),
                       ],
                     ),
                   ),
@@ -439,15 +461,10 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: Color(0xFF0067AC),
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: Color(0xFF0067AC), width: 2),
             ),
           ),
         ),
@@ -462,9 +479,7 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFF0067AC).withAlpha(10),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-            ),
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(12)),
           ),
           child: const Row(
             children: [
@@ -481,32 +496,35 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
           ),
         ),
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  itemCount: _availableActivities.length,
-                  itemBuilder: (context, index) {
-                    final activity = _availableActivities[index];
-                    final categoryColor = _getCategoryColor(activity['category']);
-                    
-                    return Draggable<Map<String, dynamic>>(
-                      data: activity,
-                      feedback: Material(
-                        elevation: 4,
-                        child: Container(
-                          width: 300,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
+          child:
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                    itemCount: _availableActivities.length,
+                    itemBuilder: (context, index) {
+                      final activity = _availableActivities[index];
+                      final categoryColor = _getCategoryColor(
+                        activity['category'],
+                      );
+
+                      return Draggable<Map<String, dynamic>>(
+                        data: activity,
+                        feedback: Material(
+                          elevation: 4,
+                          child: Container(
+                            width: 300,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: _buildActivityTile(activity, categoryColor),
                           ),
-                          child: _buildActivityTile(activity, categoryColor),
                         ),
-                      ),
-                      child: _buildActivityCard(activity, categoryColor),
-                    );
-                  },
-                ),
+                        child: _buildActivityCard(activity, categoryColor),
+                      );
+                    },
+                  ),
         ),
       ],
     );
@@ -550,9 +568,10 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
             builder: (context, candidateData, rejectedData) {
               return Container(
                 decoration: BoxDecoration(
-                  color: candidateData.isNotEmpty 
-                      ? const Color(0xFF0067AC).withAlpha(20) 
-                      : null,
+                  color:
+                      candidateData.isNotEmpty
+                          ? const Color(0xFF0067AC).withAlpha(20)
+                          : null,
                 ),
                 child: ReorderableListView(
                   onReorder: (oldIndex, newIndex) {
@@ -565,9 +584,13 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
                     });
                   },
                   children: [
-                    for (int index = 0; index < _selectedActivities.length; index++)
+                    for (
+                      int index = 0;
+                      index < _selectedActivities.length;
+                      index++
+                    )
                       _buildSelectedActivityCard(
-                        _selectedActivities[index], 
+                        _selectedActivities[index],
                         index,
                         key: ValueKey(_selectedActivities[index]['id']),
                       ),
@@ -581,32 +604,35 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
     );
   }
 
-  Widget _buildActivityCard(Map<String, dynamic> activity, Color categoryColor) {
+  Widget _buildActivityCard(
+    Map<String, dynamic> activity,
+    Color categoryColor,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: categoryColor.withAlpha(50),
-        ),
+        side: BorderSide(color: categoryColor.withAlpha(50)),
       ),
       child: _buildActivityTile(activity, categoryColor),
     );
   }
 
-  Widget _buildSelectedActivityCard(Map<String, dynamic> activity, int index, {Key? key}) {
+  Widget _buildSelectedActivityCard(
+    Map<String, dynamic> activity,
+    int index, {
+    Key? key,
+  }) {
     final categoryColor = _getCategoryColor(activity['category']);
-    
+
     return Card(
       key: key,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: categoryColor.withAlpha(50),
-        ),
+        side: BorderSide(color: categoryColor.withAlpha(50)),
       ),
       child: ListTile(
         leading: Row(
@@ -653,47 +679,60 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
     );
   }
 
-  Widget _buildActivityTile(Map<String, dynamic> activity, Color categoryColor) {
-    return ListTile(
-      leading: Icon(_getCategoryIcon(activity['category']), color: categoryColor),
-      title: Text(
-        activity['name'],
-        style: const TextStyle(fontWeight: FontWeight.w500),
+  Widget _buildActivityTile(
+    Map<String, dynamic> activity,
+    Color categoryColor,
+  ) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: Row(
+        children: [
+          Expanded(child: Icon(Icons.fitness_center, color: categoryColor)),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 4,
+            child: Text(
+              activity['name'] ?? '',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              '${activity['maxTime']} segundos',
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
-      subtitle: Text(
-        activity['category'],
-        style: TextStyle(color: categoryColor),
-      ),
-      trailing: const Icon(Icons.drag_handle),
     );
   }
 
   String _calculateTotalDuration() {
     if (_selectedActivities.isEmpty) return '0 minutos';
-    
+
     final totalSeconds = _selectedActivities.fold<int>(
       0,
       (sum, activity) => sum + (activity['maxTime'] as int),
     );
-    
+
     if (totalSeconds < 60) {
       return '$totalSeconds segundos';
     } else {
       final minutes = (totalSeconds / 60).floor();
       final seconds = totalSeconds % 60;
-      return seconds > 0 
-          ? '$minutes min $seconds seg'
-          : '$minutes minutos';
+      return seconds > 0 ? '$minutes min $seconds seg' : '$minutes minutos';
     }
   }
 
   String _getUniqueCategories() {
     if (_selectedActivities.isEmpty) return '0 tipos';
-    
-    final categories = _selectedActivities
-        .map((e) => e['category'] as String)
-        .toSet();
-    
+
+    final categories =
+        _selectedActivities.map((e) => e['category'] as String).toSet();
+
     return '${categories.length} tipos';
   }
 
@@ -708,9 +747,7 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFF0067AC).withAlpha(20),
-          ),
+          border: Border.all(color: const Color(0xFF0067AC).withAlpha(20)),
         ),
         child: Row(
           children: [
@@ -720,11 +757,7 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
                 color: const Color(0xFF0067AC).withAlpha(20),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF0067AC),
-                size: 24,
-              ),
+              child: Icon(icon, color: const Color(0xFF0067AC), size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -733,10 +766,7 @@ class _CreatePlanContentState extends State<CreatePlanContent> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Text(

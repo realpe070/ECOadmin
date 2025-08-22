@@ -168,7 +168,8 @@ class _HistoryContentState extends State<HistoryContent> {
       checkmarkColor: primaryColor,
       labelStyle: TextStyle(
         color: _selectedFilter == value ? primaryColor : Colors.grey[700],
-        fontWeight: _selectedFilter == value ? FontWeight.w600 : FontWeight.normal,
+        fontWeight:
+            _selectedFilter == value ? FontWeight.w600 : FontWeight.normal,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -196,10 +197,7 @@ class _HistoryContentState extends State<HistoryContent> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.calendar_today, 
-              size: 18, 
-              color: primaryColor,
-            ),
+            Icon(Icons.calendar_today, size: 18, color: primaryColor),
             const SizedBox(width: 12),
             Text(
               '${DateFormat('dd MMM').format(_startDate)} - ${DateFormat('dd MMM').format(_endDate)}',
@@ -216,11 +214,7 @@ class _HistoryContentState extends State<HistoryContent> {
                 color: _withAlpha(primaryColor, 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Icon(
-                Icons.arrow_drop_down,
-                color: primaryColor,
-                size: 20,
-              ),
+              child: Icon(Icons.arrow_drop_down, color: primaryColor, size: 20),
             ),
           ],
         ),
@@ -234,10 +228,7 @@ class _HistoryContentState extends State<HistoryContent> {
       context: context,
       firstDate: DateTime(2023),
       lastDate: DateTime.now(),
-      initialDateRange: DateTimeRange(
-        start: _startDate,
-        end: _endDate,
-      ),
+      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
       builder: (context, child) {
         return Theme(
           data: theme.copyWith(
@@ -247,10 +238,10 @@ class _HistoryContentState extends State<HistoryContent> {
               surface: Colors.white,
               onSurface: Colors.black87,
             ),
-            dialogTheme: const DialogTheme(
+            dialogTheme: DialogThemeData(
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             textTheme: const TextTheme(
@@ -259,16 +250,10 @@ class _HistoryContentState extends State<HistoryContent> {
                 fontWeight: FontWeight.bold,
                 color: primaryColor,
               ),
-              labelLarge: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: child!,
-          ),
+          child: Container(padding: const EdgeInsets.all(16), child: child!),
         );
       },
     );
@@ -336,10 +321,7 @@ class _HistoryContentState extends State<HistoryContent> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      SizedBox(
-                        height: 200,
-                        child: _buildChart(),
-                      ),
+                      SizedBox(height: 200, child: _buildChart()),
                     ],
                   ),
                 ),
@@ -350,7 +332,11 @@ class _HistoryContentState extends State<HistoryContent> {
     );
   }
 
-  Widget _buildSectionHeader(String title, bool isExpanded, VoidCallback onTap) {
+  Widget _buildSectionHeader(
+    String title,
+    bool isExpanded,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -452,7 +438,9 @@ class _HistoryContentState extends State<HistoryContent> {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 if (value % 1 != 0) return const Text('');
-                final date = DateTime.now().subtract(Duration(days: 7 - value.toInt()));
+                final date = DateTime.now().subtract(
+                  Duration(days: 7 - value.toInt()),
+                );
                 return Text(
                   DateFormat('dd/MM').format(date),
                   style: const TextStyle(fontSize: 10),
@@ -465,14 +453,20 @@ class _HistoryContentState extends State<HistoryContent> {
         lineBarsData: [
           LineChartBarData(
             spots: List.generate(7, (index) {
-              return FlSpot(index.toDouble(), 
-                _pauseHistory.where((p) {
-                  final date = p.date;
-                  final targetDate = DateTime.now().subtract(Duration(days: 6 - index));
-                  return date.day == targetDate.day && 
-                         date.month == targetDate.month &&
-                         date.year == targetDate.year;
-                }).length.toDouble()
+              return FlSpot(
+                index.toDouble(),
+                _pauseHistory
+                    .where((p) {
+                      final date = p.date;
+                      final targetDate = DateTime.now().subtract(
+                        Duration(days: 6 - index),
+                      );
+                      return date.day == targetDate.day &&
+                          date.month == targetDate.month &&
+                          date.year == targetDate.year;
+                    })
+                    .length
+                    .toDouble(),
               );
             }),
             isCurved: true,
@@ -533,11 +527,41 @@ class _HistoryContentState extends State<HistoryContent> {
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       children: [
-                        Expanded(flex: 2, child: Text('Usuario', style: TextStyle(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 2, child: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 2, child: Text('Plan', style: TextStyle(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 1, child: Text('Duración', style: TextStyle(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 1, child: Text('Completado', style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Usuario',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Fecha',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Plan',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            'Duración',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            'Completado',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -545,7 +569,9 @@ class _HistoryContentState extends State<HistoryContent> {
                   Expanded(
                     child: ListView.builder(
                       itemCount: _pauseHistory.length,
-                      itemBuilder: (context, index) => _buildHistoryRow(_pauseHistory[index]),
+                      itemBuilder:
+                          (context, index) =>
+                              _buildHistoryRow(_pauseHistory[index]),
                     ),
                   ),
                 ],
@@ -565,26 +591,14 @@ class _HistoryContentState extends State<HistoryContent> {
       ),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(pause.userName),
-          ),
+          Expanded(flex: 2, child: Text(pause.userName)),
           Expanded(
             flex: 2,
             child: Text(DateFormat('dd/MM/yyyy HH:mm').format(pause.date)),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(pause.planName),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text('${pause.duration} min'),
-          ),
-          Expanded(
-            flex: 1,
-            child: _buildCompletionRate(pause.completionRate),
-          ),
+          Expanded(flex: 2, child: Text(pause.planName)),
+          Expanded(flex: 1, child: Text('${pause.duration} min')),
+          Expanded(flex: 1, child: _buildCompletionRate(pause.completionRate)),
         ],
       ),
     );
@@ -597,9 +611,7 @@ class _HistoryContentState extends State<HistoryContent> {
       decoration: BoxDecoration(
         color: _withAlpha(_getStatusColor(percentage), 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: _withAlpha(_getStatusColor(percentage), 0.3),
-        ),
+        border: Border.all(color: _withAlpha(_getStatusColor(percentage), 0.3)),
       ),
       child: Text(
         '${percentage.round()}%',
@@ -624,9 +636,9 @@ class _HistoryContentState extends State<HistoryContent> {
 
   Future<void> _exportData() async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Iniciando exportación...')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Iniciando exportación...')));
 
       final url = await HistoryService.exportHistory(
         startDate: _startDate,

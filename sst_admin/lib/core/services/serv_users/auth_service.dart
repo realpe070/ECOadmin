@@ -15,6 +15,9 @@ class AuthService {
       if (response['status'] == true) {
         final token = response['data']['token'];
         await _storage.write(key: 'admin_token', value: token);
+        // Store credentials for refresh
+        await _storage.write(key: 'admin_email', value: email);
+        await _storage.write(key: 'admin_password', value: password);
         debugPrint('✅ Token almacenado exitosamente');
       } else {
         throw Exception(response['message']);
@@ -25,26 +28,39 @@ class AuthService {
     }
   }
 
-  static Future<String?> getAdminToken() async {
+  static Future<String?> getAdminToken({bool forceRefresh = false}) async {
     try {
-      // First try to get admin JWT token
-      final adminToken = await _storage.read(key: 'admin_token');
-      if (adminToken != null) {
-        debugPrint('✅ Admin JWT token found');
-        return adminToken;
+      const storage = FlutterSecureStorage();
+      String? token = await storage.read(key: 'admin_token');
+
+      if (token == null || forceRefresh) {
+        debugPrint('🔄 Token no encontrado o refresh forzado');
+
+        final email = await storage.read(key: 'admin_email');
+        final password = await storage.read(key: 'admin_password');
+
+        if (email != null && password != null) {
+          debugPrint('🔑 Reautenticando con credenciales guardadas');
+          await authenticateAdmin(email, password);
+          token = await storage.read(key: 'admin_token');
+        }
+
+        if (token == null) {
+          debugPrint('❌ No se pudo obtener un nuevo token');
+          return null;
+        }
       }
 
-      // If no admin token, try Firebase token
-      final firebaseToken = await _auth.currentUser?.getIdToken(true);
-      if (firebaseToken != null) {
-        debugPrint('✅ Firebase token found');
-        return firebaseToken;
+      // Validar formato del token
+      if (!token.contains('.') || token.split('.').length != 3) {
+        debugPrint('❌ Token inválido, forzando reautenticación');
+        return getAdminToken(forceRefresh: true);
       }
 
-      debugPrint('❌ No token found');
-      return null;
+      debugPrint('✅ Token válido encontrado');
+      return token;
     } catch (e) {
-      debugPrint('❌ Error getting token: $e');
+      debugPrint('❌ Error obteniendo token: $e');
       return null;
     }
   }

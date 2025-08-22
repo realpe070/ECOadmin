@@ -8,7 +8,7 @@ import '../serv_users/auth_service.dart';
 class NotificationService {
   final ApiService _apiService;
 
-  NotificationService([ApiService? apiService]) 
+  NotificationService([ApiService? apiService])
     : _apiService = apiService ?? ApiService();
 
   Future<List<NotificationModel>> getNotifications() async {
@@ -17,7 +17,7 @@ class NotificationService {
       if (token == null) throw Exception('No autorizado');
 
       final response = await _apiService.get('/admin/notifications');
-      
+
       if (response['status'] == true && response['data'] != null) {
         return (response['data'] as List)
             .map((item) => NotificationModel.fromJson(item))
@@ -35,16 +35,21 @@ class NotificationService {
       final token = await AuthService.getAdminToken();
       if (token == null) throw Exception('No autorizado');
 
-      // Cambiar la llamada para usar Authorization en el query
-      final response = await _apiService.get(
+      final response = await ApiService().get(
         '/admin/notification-plans',
-        query: {'token': token},  // Usar query en lugar de headers
+        headers: {'Authorization': 'Bearer $token'},
       );
-      
+
       if (response['status'] == true && response['data'] != null) {
-        return (response['data'] as List)
-            .map((item) => NotificationPlan.fromJson(item))
-            .toList();
+        final plans =
+            (response['data'] as List)
+                .map((item) => NotificationPlan.fromJson(item))
+                .toList();
+
+        // Ordenar por fecha de inicio
+        plans.sort((a, b) => a.startDate.compareTo(b.startDate));
+
+        return plans;
       }
       return [];
     } catch (e) {
@@ -59,7 +64,7 @@ class NotificationService {
       if (token == null) throw Exception('No autorizado');
 
       debugPrint('📤 Enviando plan al servidor: ${plan.toJson()}');
-      
+
       final response = await _apiService.post(
         endpoint: '/admin/notification-plans',
         data: plan.toJson(),
@@ -70,19 +75,27 @@ class NotificationService {
         debugPrint('✅ Plan creado exitosamente');
         return NotificationPlan.fromJson(response['data']);
       }
-      throw Exception(response['message'] ?? 'Error al crear plan de notificación');
+      throw Exception(
+        response['message'] ?? 'Error al crear plan de notificación',
+      );
     } catch (e) {
       debugPrint('❌ Error creating notification plan: $e');
       rethrow;
     }
   }
 
-  Future<void> updateNotificationPlanStatus(String planId, bool isActive) async {
+  Future<void> updatePlanStatus(String planId, bool isActive) async {
     try {
-      debugPrint('🔄 Actualizando estado del plan $planId a: $isActive');
-      
+      debugPrint('🔄 Actualizando estado del plan: $planId -> $isActive');
+
+      if (planId.isEmpty) {
+        throw Exception('ID de plan inválido');
+      }
+
       final token = await AuthService.getAdminToken();
-      if (token == null) throw Exception('No autorizado');
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
 
       final response = await _apiService.put(
         endpoint: '/admin/notification-plans/$planId/status',
@@ -96,7 +109,7 @@ class NotificationService {
 
       debugPrint('✅ Estado actualizado correctamente');
     } catch (e) {
-      debugPrint('❌ Error updating notification plan status: $e');
+      debugPrint('❌ Error actualizando estado del plan: $e');
       rethrow;
     }
   }
@@ -138,15 +151,29 @@ class NotificationService {
 
   Future<void> deleteNotification(String id) async {
     try {
-      final token = await AuthService.getAdminToken();
-      if (token == null) throw Exception('No autorizado');
+      debugPrint('🗑️ Eliminando plan: $id');
 
-      await _apiService.delete(
-        endpoint: '/admin/notifications/$id',
+      if (id.isEmpty) {
+        throw Exception('ID del plan no válido');
+      }
+
+      final token = await AuthService.getAdminToken();
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
+
+      final response = await _apiService.delete(
+        endpoint: 'admin/notification-plans/$id', // Removed leading slash
         token: token,
       );
+
+      if (response['status'] != true) {
+        throw Exception(response['message'] ?? 'Error eliminando el plan');
+      }
+
+      debugPrint('✅ Plan eliminado correctamente');
     } catch (e) {
-      debugPrint('❌ Error deleting notification: $e');
+      debugPrint('❌ Error eliminando plan de notificación: $e');
       rethrow;
     }
   }
@@ -161,14 +188,14 @@ class NotificationService {
         name: 'Recordatorios: ${pausePlan['name']}',
         startDate: DateTime.parse(pausePlan['startDate']),
         endDate: DateTime.parse(pausePlan['endDate']),
-        time: pausePlan['time'],
+        time: pausePlan['time'] ?? '08:00', // Valor por defecto si no existe
         assignedPlans: {}, // Se llenarán manualmente desde la UI
+        id: '', // ID vacío ya que es nuevo
       );
 
       final result = await createNotificationPlan(notificationPlan);
       debugPrint('✅ Plan de notificaciones creado: ${result.id}');
       debugPrint('📅 Período: ${result.startDate} - ${result.endDate}');
-      
     } catch (e) {
       debugPrint('❌ Error en sincronización de planes: $e');
       rethrow;

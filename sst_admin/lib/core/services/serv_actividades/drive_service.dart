@@ -17,9 +17,9 @@ class DriveService {
 
   static String getThumbnailUrl(String videoId) {
     // Si es un archivo local, usar una URL por defecto
-    if (videoId.endsWith('.mp4') || 
-        videoId.endsWith('.webm') || 
-        videoId.endsWith('.mov') || 
+    if (videoId.endsWith('.mp4') ||
+        videoId.endsWith('.webm') ||
+        videoId.endsWith('.mov') ||
         videoId.endsWith('.avi')) {
       return 'http://localhost:4300/assets/default-video-thumbnail.png';
     }
@@ -64,10 +64,10 @@ class DriveService {
       final id = extractFileId(videoUrl);
       if (id == null) throw Exception('ID de video inválido');
       return id;
-    } else if (videoUrl.endsWith('.mp4') || 
-              videoUrl.endsWith('.webm') || 
-              videoUrl.endsWith('.mov') || 
-              videoUrl.endsWith('.avi')) {
+    } else if (videoUrl.endsWith('.mp4') ||
+        videoUrl.endsWith('.webm') ||
+        videoUrl.endsWith('.mov') ||
+        videoUrl.endsWith('.avi')) {
       // Si es un archivo local, retornar el nombre tal cual
       return videoUrl;
     }
@@ -78,7 +78,7 @@ class DriveService {
     try {
       debugPrint('📁 Solicitando lista de videos...');
       final token = await AuthService.getAdminToken();
-      
+
       if (token == null) {
         debugPrint('❌ No se encontró token de autenticación');
         throw Exception('No se encontró token de administrador');
@@ -90,14 +90,18 @@ class DriveService {
 
       if (response['status'] == true && response['data'] != null) {
         final List<dynamic> rawVideos = response['data'];
-        return rawVideos.map((video) => {
-          ...Map<String, dynamic>.from(video),
-          'thumbnailUrl': getThumbnailUrl(video['id']),
-          'embedUrl': getEmbedUrl(video['id']),
-          'name': video['name'] ?? 'Sin nombre',
-          'size': video['size'] ?? 0,
-          'duration': video['videoMediaMetadata']?['durationMillis'] ?? 0,
-        }).toList();
+        return rawVideos
+            .map(
+              (video) => {
+                ...Map<String, dynamic>.from(video),
+                'thumbnailUrl': getThumbnailUrl(video['id']),
+                'embedUrl': getEmbedUrl(video['id']),
+                'name': video['name'] ?? 'Sin nombre',
+                'size': video['size'] ?? 0,
+                'duration': video['videoMediaMetadata']?['durationMillis'] ?? 0,
+              },
+            )
+            .toList();
       }
 
       return [];
@@ -121,7 +125,10 @@ class DriveService {
 
       final response = await ApiService().get('/admin/drive/validate/$fileId');
       return response['status'] == true &&
-             response['data']?['parents']?.contains('1iSJMKnKE0oXp3QxlY03nsKQsv1KHMbhc') == true;
+          response['data']?['parents']?.contains(
+                '1iSJMKnKE0oXp3QxlY03nsKQsv1KHMbhc',
+              ) ==
+              true;
     } catch (e) {
       debugPrint('❌ Error validando archivo: $e');
       return false;

@@ -6,10 +6,7 @@ import '../video_selector_dialog.dart';
 class EditActivityDialog extends StatefulWidget {
   final Map<String, dynamic> activity;
 
-  const EditActivityDialog({
-    super.key,
-    required this.activity,
-  });
+  const EditActivityDialog({super.key, required this.activity});
 
   @override
   State<EditActivityDialog> createState() => _EditActivityDialogState();
@@ -35,24 +32,35 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
 
   void _initializeControllers() {
     _nameController = TextEditingController(text: widget.activity['name']);
-    _descriptionController = TextEditingController(text: widget.activity['description']);
-    _minTimeController = TextEditingController(text: widget.activity['minTime'].toString());
-    _maxTimeController = TextEditingController(text: widget.activity['maxTime'].toString());
-    _videoLinkController = TextEditingController(text: DriveService.getVideoName({'id': widget.activity['videoUrl']}));
+    _descriptionController = TextEditingController(
+      text: widget.activity['description'],
+    );
+    _minTimeController = TextEditingController(
+      text: widget.activity['minTime'].toString(),
+    );
+    _maxTimeController = TextEditingController(
+      text: widget.activity['maxTime'].toString(),
+    );
+    _videoLinkController = TextEditingController(
+      text: DriveService.getVideoName({'id': widget.activity['videoUrl']}),
+    );
     _selectedCategory = widget.activity['category'];
     _sensorEnabled = widget.activity['sensorEnabled'];
     _selectedVideo = {'id': widget.activity['videoUrl']};
-    _showSensorSwitch = _selectedCategory == 'Tren Superior' || _selectedCategory == 'Movilidad Articular';
+    _showSensorSwitch =
+        _selectedCategory == 'Tren Superior' ||
+        _selectedCategory == 'Movilidad Articular';
   }
 
   Future<void> _showVideoSelector() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => VideoSelectorDialog(
-        onVideoSelected: (video) {
-          Navigator.pop(context, video);
-        },
-      ),
+      builder:
+          (context) => VideoSelectorDialog(
+            onVideoSelected: (video) {
+              Navigator.pop(context, video);
+            },
+          ),
     );
 
     if (result != null && mounted) {
@@ -77,12 +85,28 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
+      // Sanitize inputs before sending
+      final sanitizedName = _nameController.text.trim();
+      final sanitizedDescription = _descriptionController.text.trim();
+
+      // Validate numeric inputs
+      final minTime = int.tryParse(_minTimeController.text);
+      final maxTime = int.tryParse(_maxTimeController.text);
+
+      if (minTime == null || maxTime == null) {
+        throw Exception('Los tiempos deben ser números válidos');
+      }
+
+      if (maxTime <= minTime) {
+        throw Exception('El tiempo máximo debe ser mayor al tiempo mínimo');
+      }
+
       final result = await ActivityService.updateActivity(
         id: widget.activity['id'],
-        name: _nameController.text,
-        description: _descriptionController.text,
-        minTime: int.parse(_minTimeController.text),
-        maxTime: int.parse(_maxTimeController.text),
+        name: sanitizedName,
+        description: sanitizedDescription,
+        minTime: minTime,
+        maxTime: maxTime,
         category: _selectedCategory!,
         videoUrl: _selectedVideo!['id'],
         sensorEnabled: _sensorEnabled,
@@ -91,13 +115,13 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
       if (!mounted) return;
 
       if (result['status'] == true) {
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Actividad actualizada exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true);
       }
     } catch (e) {
       if (!mounted) return;
@@ -201,16 +225,29 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
                         _buildDropdownItem('Visual', Icons.visibility),
                         _buildDropdownItem('Auditiva', Icons.hearing),
                         _buildDropdownItem('Cognitiva', Icons.psychology),
-                        _buildDropdownItem('Tren Superior', Icons.accessibility_new),
-                        _buildDropdownItem('Tren Inferior', Icons.directions_walk),
-                        _buildDropdownItem('Movilidad Articular', Icons.self_improvement),
-                        _buildDropdownItem('Estiramientos Generales', Icons.accessibility),
+                        _buildDropdownItem(
+                          'Tren Superior',
+                          Icons.accessibility_new,
+                        ),
+                        _buildDropdownItem(
+                          'Tren Inferior',
+                          Icons.directions_walk,
+                        ),
+                        _buildDropdownItem(
+                          'Movilidad Articular',
+                          Icons.self_improvement,
+                        ),
+                        _buildDropdownItem(
+                          'Estiramientos Generales',
+                          Icons.accessibility,
+                        ),
                       ],
                       onChanged: (value) {
                         setState(() {
                           _selectedCategory = value;
-                          _showSensorSwitch = value == 'Tren Superior' || 
-                                            value == 'Movilidad Articular';
+                          _showSensorSwitch =
+                              value == 'Tren Superior' ||
+                              value == 'Movilidad Articular';
                           if (!_showSensorSwitch) {
                             _sensorEnabled = false;
                           }
@@ -233,10 +270,7 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.sensors,
-                          color: Color(0xFF0067AC),
-                        ),
+                        const Icon(Icons.sensors, color: Color(0xFF0067AC)),
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Column(
@@ -337,15 +371,10 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: Color(0xFF0067AC),
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: Color(0xFF0067AC), width: 2),
             ),
           ),
         ),
@@ -374,7 +403,7 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
             Icon(
               categoryIcons[text] ?? Icons.circle,
               color: const Color(0xFF0067AC),
-              size: 20
+              size: 20,
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -444,7 +473,7 @@ class _EditActivityDialogState extends State<EditActivityDialog> {
                       ),
                     ),
                   ),
-                  if (widget.activity['videoUrl'] != null) 
+                  if (widget.activity['videoUrl'] != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8, left: 12),
                       child: Row(

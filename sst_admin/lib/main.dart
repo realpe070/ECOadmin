@@ -8,13 +8,11 @@ import 'presentation/admin_login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // Inicializar localización en español
   await initializeDateFormatting('es_ES', null);
-  
+
   runApp(const MyApp());
 }
 
@@ -24,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,  
+      debugShowCheckedModeBanner: false,
       title: 'SST Admin',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -41,9 +39,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('es', 'ES'),
-      ],
+      supportedLocales: const [Locale('es', 'ES')],
       locale: const Locale('es', 'ES'),
       initialRoute: AdminRoutes.login,
       routes: AdminRoutes.routes,
